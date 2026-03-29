@@ -1,0 +1,207 @@
+
+/* ═══════════════════════════════════════════════════════
+   HAMBURGER + OVERLAY
+═══════════════════════════════════════════════════════ */
+.topbar-hamburger {
+  display: none;
+  background: none;
+  border: none;
+  padding: 0.45rem;
+  color: #6b7280;
+  cursor: pointer;
+  border-radius: 9px;
+  line-height: 0;
+  transition: background 0.15s;
+}
+.topbar-hamburger:hover { background: #f4f5f7; color: #0f0f1a; }
+
+.sidebar-mobile-overlay {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.4);
+  z-index: 199;
+}
+
+/* ═══════════════════════════════════════════════════════
+   TABLET  ≤ 1024px
+═══════════════════════════════════════════════════════ */
+@media (max-width: 1024px) {
+  .sidebar { width: 64px; }
+  .sidebar-brand,
+  .sidebar-item span,
+  .sidebar-section-label,
+  .sidebar-logout-btn span { display: none !important; }
+  .sidebar-item { justify-content: center; padding: 0.6rem; }
+  .sidebar-item-arrow { display: none !important; }
+  .sidebar-toggle-row { justify-content: center; }
+  .sidebar-toggle-btn { display: none; }
+  .sidebar-logout-btn { justify-content: center; padding: 0.6rem; }
+  .panel-wrapper { margin-left: 64px; }
+  .panel-wrapper-collapsed { margin-left: 64px; }
+  .dash-cards { grid-template-columns: repeat(2,1fr); }
+  .dash-shortcuts { grid-template-columns: repeat(2,1fr); }
+  .dash-charts-grid { grid-template-columns: 1fr; }
+  .dash-pedidos-grid { grid-template-columns: 1fr; }
+  .form-grid { grid-template-columns: repeat(2,1fr); }
+  .reporte-kpis { grid-template-columns: repeat(3,1fr) !important; }
+}
+
+/* ═══════════════════════════════════════════════════════
+   MOBILE  ≤ 768px
+═══════════════════════════════════════════════════════ */
+@media (max-width: 768px) {
+  /* sidebar fuera de pantalla por defecto */
+  .sidebar {
+    transform: translateX(-100%);
+    width: 240px !important;
+    transition: transform 0.25s cubic-bezier(0.4,0,0.2,1);
+    z-index: 200;
+  }
+  .sidebar.mobile-open { transform: translateX(0); }
+  .sidebar.mobile-open .sidebar-brand,
+  .sidebar.mobile-open .sidebar-item span,
+  .sidebar.mobile-open .sidebar-section-label,
+  .sidebar.mobile-open .sidebar-logout-btn span { display: unset !important; }
+  .sidebar.mobile-open .sidebar-item { justify-content: flex-start !important; padding: 0.6rem 0.75rem !important; }
+  .sidebar.mobile-open .sidebar-item-arrow { display: block !important; }
+  .sidebar.mobile-open .sidebar-toggle-row { justify-content: space-between !important; }
+  .sidebar.mobile-open .sidebar-toggle-btn { display: flex !important; }
+  .sidebar.mobile-open .sidebar-logout-btn { justify-content: flex-start !important; padding: 0.6rem 0.75rem !important; }
+  .sidebar-mobile-overlay { display: block; }
+  .panel-wrapper,
+  .panel-wrapper-collapsed { margin-left: 0 !important; }
+
+  /* topbar */
+  .topbar { padding: 0.7rem 1rem; gap: 0.5rem; }
+  .topbar-search { display: none; }
+  .topbar-hamburger { display: flex !important; }
+  .breadcrumb { padding: 0.45rem 1rem; font-size: 0.74rem; }
+  .panel-main { padding: 1rem; }
+
+  /* panel header */
+  .panel-header { flex-direction: column; align-items: flex-start; gap: 0.65rem; margin-bottom: 1.25rem; }
+  .panel-title { font-size: 1.1rem; }
+  .table-search-wrap { width: 100%; }
+  .table-search-input { width: 100%; box-sizing: border-box; }
+
+  /* Login */
+  .login-card { padding: 2rem 1.35rem; margin: 1rem; border-radius: 18px; }
+  .login-card h1 { font-size: 1.65rem; }
+
+  /* Dashboard */
+  .dash-cards { grid-template-columns: repeat(2,1fr); gap: 0.65rem; margin-bottom: 1.25rem; }
+  .dash-card { padding: 0.9rem 1rem; }
+  .dash-card-icon { width: 40px; height: 40px; border-radius: 10px; }
+  .dash-card-value { font-size: 1.2rem; }
+  .dash-card-label { font-size: 0.72rem; }
+  .dash-shortcuts { grid-template-columns: repeat(2,1fr); gap: 0.45rem; margin-bottom: 1.25rem; }
+  .dash-shortcut { padding: 0.65rem 0.75rem; }
+  .dash-charts-grid { grid-template-columns: 1fr; gap: 0.75rem; }
+  .dash-pedidos-grid { grid-template-columns: 1fr; gap: 0.75rem; }
+  .dash-chart-card { padding: 1rem; }
+
+  /* Forms */
+  .form-card { padding: 1.1rem; border-radius: 14px; }
+  .form-grid { grid-template-columns: 1fr !important; gap: 0.75rem; }
+  .form-grid-half { grid-template-columns: 1fr !important; gap: 0.75rem; }
+  .form-actions { flex-direction: column; gap: 0.5rem; }
+  .form-btn-submit,
+  .form-btn-cancel { width: 100%; justify-content: center; }
+
+  /* Tablas con scroll horizontal */
+  .reporte-card { border-radius: 12px; overflow-x: auto; -webkit-overflow-scrolling: touch; }
+  .reporte-table { min-width: 560px; font-size: 0.78rem; }
+  .reporte-table th, .reporte-table td { padding: 0.6rem 0.75rem; }
+  .reporte-kpis { grid-template-columns: repeat(2,1fr) !important; gap: 0.65rem; }
+  .reporte-kpi { padding: 0.75rem; }
+  .reporte-kpi-icon { width: 34px; height: 34px; border-radius: 9px; }
+  .reporte-kpi-value { font-size: 1.1rem; }
+  .reporte-tabs { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+  .reporte-tab { white-space: nowrap; font-size: 0.78rem; padding: 0.5rem 0.75rem; }
+  .reporte-export-btn { font-size: 0.75rem; padding: 0.45rem 0.9rem; }
+  .table-pagination-wrap { padding: 0.6rem 0.75rem; }
+
+  /* Pedidos */
+  .pedido-tipo-badges { gap: 0.45rem; margin-top: 0.9rem; }
+  .pedido-cancel-edit-btn { font-size: 0.75rem; padding: 0.4rem 0.75rem; }
+  .tech-chips { gap: 0.3rem; }
+  .tech-chip { padding: 0.3rem 0.65rem; font-size: 0.73rem; }
+
+  /* Proyectos concluidos y cancelados */
+  .concluido-header { flex-wrap: wrap; gap: 0.65rem; padding: 0.9rem 1rem; }
+  .concluido-check { display: none; }
+  .concluido-info { width: 100%; }
+  .concluido-nombre { font-size: 0.9rem; }
+  .concluido-toggle,
+  .cancelado-toggle { width: 100%; justify-content: center; border-radius: 10px; }
+  .concluido-mensaje-panel { padding: 0.9rem 1rem; }
+  .concluido-fechas { flex-wrap: wrap; }
+
+  /* Fecha entrega */
+  .fe-resumen { flex-direction: column; gap: 0.5rem; }
+  .fe-resumen-item { justify-content: center; }
+  .fe-row { flex-wrap: wrap; gap: 0.5rem; padding: 0.75rem 0.9rem; }
+  .fe-row-left { width: 100%; }
+  .fe-row-center { font-size: 0.75rem; }
+  .fe-badge { font-size: 0.72rem; }
+
+  /* Fecha inicio */
+  .fi-row { flex-wrap: wrap; gap: 0.6rem; padding: 0.65rem 0.85rem; }
+  .fi-row-fecha { flex-direction: row; align-items: center; gap: 0.3rem; min-width: auto; }
+  .fi-fecha-dia { font-size: 0.95rem; }
+
+  /* Alertas */
+  .alerta-grupo-header { padding: 0.75rem 1rem; gap: 0.5rem; }
+  .alerta-grupo-label { font-size: 0.82rem; }
+  .alerta-items { padding: 0 0.75rem 0.75rem; }
+  .alerta-item { padding: 0.5rem 0.75rem; }
+  .alerta-header-icon { display: none; }
+
+  /* Configuración */
+  .config-avatar-wrap { flex-direction: column; align-items: flex-start; gap: 0.75rem; }
+
+  /* Chat apilado vertical */
+  .chat-root {
+    flex-direction: column;
+    height: auto;
+    min-height: calc(100vh - 110px);
+    margin: -1rem;
+  }
+  .chat-sidebar {
+    width: 100% !important;
+    min-width: 0 !important;
+    max-height: 200px;
+    border-right: none !important;
+    border-bottom: 1px solid #ebebeb;
+    overflow-y: auto;
+  }
+  .chat-sidebar-collapsed { max-height: 52px; overflow: hidden; }
+  .chat-main { flex: 1; min-height: 0; display: flex; flex-direction: column; }
+  .chat-messages { flex: 1; max-height: 340px; }
+  .chat-header { padding: 0.75rem 1rem; }
+  .chat-input-bar { padding: 0.65rem 0.75rem; }
+
+  /* Datepicker no se corte */
+  .datepicker-dropdown { left: 0; right: 0; width: auto; min-width: 260px; }
+
+  /* Confirm modal */
+  .confirm-card { margin: 1rem; border-radius: 16px; padding: 1.5rem; }
+}
+
+/* ═══════════════════════════════════════════════════════
+   SMALL MOBILE  ≤ 480px
+═══════════════════════════════════════════════════════ */
+@media (max-width: 480px) {
+  .panel-main { padding: 0.75rem; }
+  .dash-cards { gap: 0.45rem; }
+  .dash-card { padding: 0.75rem; }
+  .dash-card-value { font-size: 1.1rem; }
+  .dash-shortcuts { grid-template-columns: 1fr 1fr; gap: 0.4rem; }
+  .reporte-kpis { grid-template-columns: 1fr 1fr !important; }
+  .topbar { padding: 0.6rem 0.75rem; }
+  .topbar-actions { gap: 0.4rem; }
+  .login-card { padding: 1.5rem 1rem; }
+  .chat-messages { max-height: 280px; }
+  .form-card { padding: 0.9rem; }
+}
