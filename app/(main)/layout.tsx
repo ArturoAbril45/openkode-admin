@@ -8,7 +8,7 @@ import {
   MessageSquare, Bell, Settings, FileBarChart2,
   LogOut, ChevronRight, PanelLeftClose, PanelLeftOpen, Search, Globe,
   KeyRound, FolderCheck, FolderX, CalendarClock, CalendarCheck,
-  Trash2, Menu,
+  Trash2,
 } from "lucide-react";
 import PageLoader           from "../components/PageLoader";
 import ToastContainer       from "../components/Toast";
@@ -59,7 +59,6 @@ function LayoutContent({ children }: { children: React.ReactNode }) {
   const [perfilFoto, setPerfilFoto] = useState("");
   const [perfilNombre, setPerfilNombre] = useState("A");
   const [loggingOut,   setLoggingOut]   = useState(false);
-  const [mobileOpen,   setMobileOpen]   = useState(false);
   const prevPath = useRef<string | null>(null);
 
   useEffect(() => {
@@ -85,10 +84,6 @@ function LayoutContent({ children }: { children: React.ReactNode }) {
     return () => window.removeEventListener("configuracion-updated", cargarPerfil);
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
-
-  useEffect(() => {
-    setMobileOpen(false);
-  }, [pathname]);
 
   useEffect(() => {
     if (!pathname || pathname === prevPath.current) return;
@@ -154,7 +149,7 @@ function LayoutContent({ children }: { children: React.ReactNode }) {
   ];
 
   const c = collapsed;
-  const showFull = !c || mobileOpen;
+  const showFull = !c;
 
   return (
     <div className="panel-root">
@@ -169,8 +164,7 @@ function LayoutContent({ children }: { children: React.ReactNode }) {
         </div>
       )}
       {/* ── SIDEBAR ── */}
-      {mobileOpen && <div className="sidebar-mobile-overlay" onClick={() => setMobileOpen(false)} />}
-      <aside className={`sidebar${c ? " sidebar-collapsed" : ""}${mobileOpen ? " mobile-open" : ""}`}>
+      <aside className={`sidebar${c ? " sidebar-collapsed" : ""}`}>
 
         <div className="sidebar-toggle-row">
           {showFull && (
@@ -181,7 +175,7 @@ function LayoutContent({ children }: { children: React.ReactNode }) {
           )}
           <button
             className="sidebar-toggle-btn"
-            onClick={() => mobileOpen ? setMobileOpen(false) : setCollapsed(!c)}
+            onClick={() => setCollapsed(!c)}
             aria-label={c ? t.expandMenu : t.collapseMenu}
           >
             {showFull ? <PanelLeftClose size={18} strokeWidth={1.8} /> : <PanelLeftOpen size={18} strokeWidth={1.8} />}
@@ -244,9 +238,6 @@ function LayoutContent({ children }: { children: React.ReactNode }) {
 
         {/* Topbar */}
         <header className="topbar">
-          <button className="topbar-hamburger" onClick={() => setMobileOpen(o => !o)} aria-label="Menu">
-            <Menu size={20} strokeWidth={1.8} />
-          </button>
           <div className="topbar-search">
             <Search size={15} className="topbar-search-icon" strokeWidth={1.8} />
             <input type="text" placeholder={t.searchPH} className="topbar-search-input" />
