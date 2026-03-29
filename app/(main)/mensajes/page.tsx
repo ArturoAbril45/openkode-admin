@@ -130,7 +130,7 @@ export default function MensajesPage() {
                     <div className="chat-item-info">
                       <div style={{ display: "flex", alignItems: "center", gap: "0.35rem" }}>
                         <p className="chat-item-name">{nombre}</p>
-                        {c.pais && <span className="chat-pais-tag">{String(c.pais)}</span>}
+                        {!!c.pais && <span className="chat-pais-tag">{String(c.pais)}</span>}
                       </div>
                       <p className="chat-item-preview">{ultimo?.texto ?? t.mensajesSinMensajes}</p>
                     </div>

@@ -241,7 +241,7 @@ export default function PedidosPage() {
     try {
       await deletePedido(deletingId);
       setPedidos(prev => prev.filter(p => p.id !== deletingId));
-      showToast(t.pedidosEliminadoOk ?? "Pedido eliminado", "success");
+      showToast("Pedido eliminado", "success");
     } catch {
       showToast(t.pedidosGuardadoError, "error");
     } finally {

@@ -392,7 +392,7 @@ const ES = {
   loading: "Cargando...",
   saving: "Guardando...",
   noResults: "Sin resultados",
-} as const;
+};
 
 const EN: typeof ES = {
   expandMenu: "Expand menu",

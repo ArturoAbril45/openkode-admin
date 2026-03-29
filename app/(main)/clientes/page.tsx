@@ -484,8 +484,8 @@ export default function ClientesPage() {
                 <td className="reporte-td-gray">{String(c.telefono ?? "")}</td>
                 <td>{String(c.pais ?? "")}</td>
                 <td>{String(c.proyecto ?? "")}</td>
-                <td className="reporte-td-gray">{c.contrato} {parseInt(String(c.contrato)) !== 1 ? t.clientesMeses : t.clientesMes}</td>
-                <td className="reporte-td-bold" style={{ color:"#16a34a" }}>${c.valorPago} {c.tipoPago === "mensual" ? t.clientesXMes : ""}</td>
+                <td className="reporte-td-gray">{String(c.contrato ?? "")} {parseInt(String(c.contrato)) !== 1 ? t.clientesMeses : t.clientesMes}</td>
+                <td className="reporte-td-bold" style={{ color:"#16a34a" }}>${String(c.valorPago ?? "")} {c.tipoPago === "mensual" ? t.clientesXMes : ""}</td>
                 <td className="reporte-td-gray">{c.fechaInicio ? formatFecha(String(c.fechaInicio), locale) : ""}</td>
                 <td>
                   <div style={{ display:"flex", gap:"0.4rem" }}>
