@@ -8,7 +8,7 @@ import {
   MessageSquare, Bell, Settings, FileBarChart2,
   LogOut, ChevronRight, PanelLeftClose, PanelLeftOpen, Search, Globe,
   KeyRound, FolderCheck, FolderX, CalendarClock, CalendarCheck,
-  Trash2,
+  Trash2, CreditCard,
 } from "lucide-react";
 import PageLoader           from "../components/PageLoader";
 import ToastContainer       from "../components/Toast";
@@ -33,6 +33,7 @@ const SECTION_LABELS: Record<string, string> = {
   "/fecha-entrega":        "Fecha de Entrega",
   "/fecha-inicio":         "Fecha de Inicio",
   "/alertas":              "Alertas",
+  "/pagos":                "Pagos",
   "/configuracion":        "Configuración",
   "/reporte-tecnico":      "Reporte Técnico",
 };
@@ -144,6 +145,7 @@ function LayoutContent({ children }: { children: React.ReactNode }) {
 
   const NAV_SYSTEM = [
     { href: "/alertas",         icon: Bell,          label: t.navAlertas      },
+    { href: "/pagos",           icon: CreditCard,    label: t.navPagos        },
     { href: "/configuracion",   icon: Settings,      label: t.navConfiguracion},
     { href: "/reporte-tecnico", icon: FileBarChart2, label: t.navReporte      },
   ];

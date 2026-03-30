@@ -129,6 +129,20 @@ export async function deleteCV(nombre: string): Promise<void> {
   await deleteObject(storageRef);
 }
 
+// ─── COMPROBANTES DE PAGO ─────────────────────────────────────────────────────
+export async function uploadComprobante(file: File): Promise<{ url: string; nombre: string }> {
+  const nombre = `${Date.now()}_${file.name}`;
+  const storageRef = ref(storage, `comprobantes/${nombre}`);
+  await uploadBytes(storageRef, file);
+  const url = await getDownloadURL(storageRef);
+  return { url, nombre };
+}
+
+export async function deleteComprobante(nombre: string): Promise<void> {
+  const storageRef = ref(storage, `comprobantes/${nombre}`);
+  await deleteObject(storageRef);
+}
+
 // ─── NOTIFICACIONES ───────────────────────────────────────────────────────────
 export async function getNotificaciones() {
   const snap = await getDocs(

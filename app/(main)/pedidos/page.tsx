@@ -5,13 +5,14 @@ import {
   User, Globe, Monitor, Smartphone, MessageSquare, Save,
   Layers, Zap, Activity, Code2, Search, CalendarCheck, CalendarClock,
   FolderOpen, Loader2, Pencil, X, Trash2,
+  DollarSign, Upload, FileCheck, ExternalLink,
 } from "lucide-react";
 import CustomSelect  from "../../components/CustomSelect";
 import DatePicker    from "../../components/DatePicker";
 import ConfirmModal  from "../../components/ConfirmModal";
 import Pagination    from "../../components/Pagination";
 import { showToast } from "../../components/Toast";
-import { getPedidos, addPedido, updatePedido, deletePedido, getClientes, syncPedidoCancelado, syncPedidoConcluido, removeProyectoCancelado, removeProyectoConcluido } from "../../lib/services";
+import { getPedidos, addPedido, updatePedido, deletePedido, getClientes, syncPedidoCancelado, syncPedidoConcluido, removeProyectoCancelado, removeProyectoConcluido, uploadComprobante, deleteComprobante } from "../../lib/services";
 import { useLang } from "../../lib/LangContext";
 
 const TECNOLOGIAS = [
@@ -45,16 +46,20 @@ function formatFecha(iso: string, locale: string) {
 const PER_PAGE = 5;
 
 const EMPTY_FORM = {
-  clienteId:    "",
-  cliente:      "",
-  proyecto:     "",
-  tipo:         "",
-  servicio:     "",
-  prioridad:    "",
-  estado:       "",
-  fecha:        "",
-  fechaEntrega: "",
-  mensaje:      "",
+  clienteId:         "",
+  cliente:           "",
+  proyecto:          "",
+  tipo:              "",
+  servicio:          "",
+  prioridad:         "",
+  estado:            "",
+  fecha:             "",
+  fechaEntrega:      "",
+  mensaje:           "",
+  montoTotal:        "",
+  montoPagado:       "",
+  comprobante:       "",
+  comprobanteNombre: "",
 };
 
 export default function PedidosPage() {
@@ -123,7 +128,10 @@ export default function PedidosPage() {
   const [loadingData, setLoadingData] = useState(true);
   const [deletingId,  setDeletingId]  = useState<string | null>(null);
   const [confirmDel,  setConfirmDel]  = useState(false);
-  const formRef = useRef<HTMLDivElement>(null);
+  const formRef             = useRef<HTMLDivElement>(null);
+  const comprobanteInputRef = useRef<HTMLInputElement>(null);
+  const [comprobanteFile,    setComprobanteFile]    = useState<File | null>(null);
+  const [uploadingComp,      setUploadingComp]      = useState(false);
 
   useEffect(() => {
     Promise.all([getPedidos(), getClientes()]).then(([peds, clts]) => {
@@ -175,28 +183,57 @@ export default function PedidosPage() {
       const hoy = new Date().toISOString().split("T")[0];
       let pedidoId = editId;
 
+      // Upload comprobante if a new file was selected
+      let comprobanteUrl    = form.comprobante;
+      let comprobanteNombreVal = form.comprobanteNombre;
+      if (comprobanteFile) {
+        setUploadingComp(true);
+        try {
+          if (form.comprobanteNombre) {
+            try { await deleteComprobante(form.comprobanteNombre); } catch { /* ya no existe */ }
+          }
+          const result = await uploadComprobante(comprobanteFile);
+          comprobanteUrl       = result.url;
+          comprobanteNombreVal = result.nombre;
+          showToast(t.pedidosComprobanteOk, "success");
+        } catch {
+          showToast(t.pedidosComprobanteError, "error");
+          setUploadingComp(false);
+          return;
+        }
+        setUploadingComp(false);
+        setComprobanteFile(null);
+      }
+
+      const saveData = {
+        ...form,
+        tecnologias,
+        comprobante:       comprobanteUrl,
+        comprobanteNombre: comprobanteNombreVal,
+      };
+
       if (editId) {
-        await updatePedido(editId, { ...form, tecnologias });
+        await updatePedido(editId, saveData);
         showToast(t.pedidosActualizadoOk, "success");
         setEditId(null);
       } else {
-        const ref = await addPedido({ ...form, tecnologias });
+        const ref = await addPedido(saveData);
         pedidoId = ref.id;
         showToast(t.pedidosGuardadoOk, "success");
       }
 
-      if (form.estado === "cancelado" && pedidoId) {
+      if (saveData.estado === "cancelado" && pedidoId) {
         await syncPedidoCancelado(pedidoId, {
-          cliente: form.cliente, clienteId: form.clienteId,
-          proyecto: form.proyecto, tipo: form.tipo, servicio: form.servicio,
-          fechaInicio: form.fecha, fechaCancelacion: hoy, tecnologias, motivo: "",
+          cliente: saveData.cliente, clienteId: saveData.clienteId,
+          proyecto: saveData.proyecto, tipo: saveData.tipo, servicio: saveData.servicio,
+          fechaInicio: saveData.fecha, fechaCancelacion: hoy, tecnologias, motivo: "",
         });
         await removeProyectoConcluido(pedidoId);
-      } else if (form.estado === "entregado" && pedidoId) {
+      } else if (saveData.estado === "entregado" && pedidoId) {
         await syncPedidoConcluido(pedidoId, {
-          cliente: form.cliente, clienteId: form.clienteId,
-          proyecto: form.proyecto, tipo: form.tipo, servicio: form.servicio,
-          fechaInicio: form.fecha, fechaEntrega: form.fechaEntrega,
+          cliente: saveData.cliente, clienteId: saveData.clienteId,
+          proyecto: saveData.proyecto, tipo: saveData.tipo, servicio: saveData.servicio,
+          fechaInicio: saveData.fecha, fechaEntrega: saveData.fechaEntrega,
           tecnologias, mensajeFinal: "",
         });
         await removeProyectoCancelado(pedidoId);
@@ -219,18 +256,23 @@ export default function PedidosPage() {
   function editarPedido(p: Record<string, unknown>) {
     setEditId(p.id as string);
     setForm({
-      clienteId:    String(p.clienteId   ?? ""),
-      cliente:      String(p.cliente     ?? ""),
-      proyecto:     String(p.proyecto    ?? ""),
-      tipo:         String(p.tipo        ?? ""),
-      servicio:     String(p.servicio    ?? ""),
-      prioridad:    String(p.prioridad   ?? ""),
-      estado:       String(p.estado      ?? ""),
-      fecha:        String(p.fecha       ?? ""),
-      fechaEntrega: String(p.fechaEntrega ?? ""),
-      mensaje:      String(p.mensaje     ?? ""),
+      clienteId:         String(p.clienteId          ?? ""),
+      cliente:           String(p.cliente            ?? ""),
+      proyecto:          String(p.proyecto           ?? ""),
+      tipo:              String(p.tipo               ?? ""),
+      servicio:          String(p.servicio           ?? ""),
+      prioridad:         String(p.prioridad          ?? ""),
+      estado:            String(p.estado             ?? ""),
+      fecha:             String(p.fecha              ?? ""),
+      fechaEntrega:      String(p.fechaEntrega       ?? ""),
+      mensaje:           String(p.mensaje            ?? ""),
+      montoTotal:        String(p.montoTotal         ?? ""),
+      montoPagado:       String(p.montoPagado        ?? ""),
+      comprobante:       String(p.comprobante        ?? ""),
+      comprobanteNombre: String(p.comprobanteNombre  ?? ""),
     });
     setTecnologias((p.tecnologias as string[]) ?? []);
+    setComprobanteFile(null);
     setErrors({});
     setTimeout(() => formRef.current?.scrollIntoView({ behavior: "smooth", block: "start" }), 50);
   }
@@ -253,6 +295,7 @@ export default function PedidosPage() {
     setEditId(null);
     setForm(EMPTY_FORM);
     setTecnologias([]);
+    setComprobanteFile(null);
     setErrors({});
   }
 
@@ -453,13 +496,113 @@ export default function PedidosPage() {
             {errors.mensaje && <p className="form-error-msg">{errors.mensaje}</p>}
           </div>
 
+          <p className="form-section-label" style={{ marginTop: "1.75rem" }}>{t.pedidosPagoInfo}</p>
+          <div className="form-grid">
+
+            <div className="form-field">
+              <label className="form-label">{t.pedidosMontoTotal}</label>
+              <div className="form-icon-wrap">
+                <DollarSign size={14} className="form-icon" strokeWidth={1.8} />
+                <input
+                  type="number"
+                  min="0"
+                  step="0.01"
+                  className="form-input has-icon"
+                  placeholder={t.pedidosMontoTotalPH}
+                  value={form.montoTotal}
+                  onChange={e => setForm(f => ({ ...f, montoTotal: e.target.value }))}
+                />
+              </div>
+            </div>
+
+            <div className="form-field">
+              <label className="form-label">{t.pedidosMontoPagado}</label>
+              <div className="form-icon-wrap">
+                <DollarSign size={14} className="form-icon" strokeWidth={1.8} />
+                <input
+                  type="number"
+                  min="0"
+                  step="0.01"
+                  className="form-input has-icon"
+                  placeholder={t.pedidosMontoPagadoPH}
+                  value={form.montoPagado}
+                  onChange={e => setForm(f => ({ ...f, montoPagado: e.target.value }))}
+                />
+              </div>
+            </div>
+
+            {(form.montoTotal || form.montoPagado) && (
+              <div className="form-field">
+                <label className="form-label">{t.pedidosMontoPendiente}</label>
+                <div className="form-icon-wrap">
+                  <DollarSign size={14} className="form-icon" strokeWidth={1.8} />
+                  <input
+                    type="text"
+                    readOnly
+                    className="form-input has-icon"
+                    style={{ background: "var(--bg-secondary, #f9fafb)", cursor: "default" }}
+                    value={`$${Math.max(0, (parseFloat(form.montoTotal) || 0) - (parseFloat(form.montoPagado) || 0)).toFixed(2)}`}
+                  />
+                </div>
+              </div>
+            )}
+
+          </div>
+
+          <div className="form-field" style={{ marginTop: "1rem" }}>
+            <label className="form-label">{t.pedidosSubirComprobante}</label>
+            <div style={{ display: "flex", flexDirection: "column", gap: "0.5rem" }}>
+              {form.comprobante && !comprobanteFile && (
+                <div style={{ display: "flex", alignItems: "center", gap: "0.5rem", fontSize: "0.82rem", color: "#6c63ff" }}>
+                  <FileCheck size={14} strokeWidth={2} />
+                  <span>{t.pedidosComprobanteActual}:</span>
+                  <a href={form.comprobante} target="_blank" rel="noreferrer" style={{ display: "flex", alignItems: "center", gap: "0.25rem", color: "#6c63ff", textDecoration: "underline" }}>
+                    {t.pedidosVerComprobante} <ExternalLink size={12} />
+                  </a>
+                </div>
+              )}
+              {comprobanteFile && (
+                <div style={{ display: "flex", alignItems: "center", gap: "0.5rem", fontSize: "0.82rem", color: "#059669" }}>
+                  <FileCheck size={14} strokeWidth={2} />
+                  <span>{comprobanteFile.name}</span>
+                  <button type="button" onClick={() => setComprobanteFile(null)} style={{ background: "none", border: "none", cursor: "pointer", color: "#9ca3af", padding: 0 }}>
+                    <X size={13} />
+                  </button>
+                </div>
+              )}
+              <input
+                ref={comprobanteInputRef}
+                type="file"
+                accept="image/*,.pdf"
+                style={{ display: "none" }}
+                onChange={e => {
+                  const f = e.target.files?.[0];
+                  if (f) setComprobanteFile(f);
+                  e.target.value = "";
+                }}
+              />
+              <button
+                type="button"
+                className="form-btn-cancel"
+                style={{ width: "fit-content" }}
+                onClick={() => comprobanteInputRef.current?.click()}
+                disabled={uploadingComp}
+              >
+                {uploadingComp
+                  ? <><Loader2 size={14} className="panel-loading-spin" /> {t.pedidosComprobanteSubiendo}</>
+                  : <><Upload size={14} strokeWidth={2} /> {t.pedidosSubirComprobante}</>
+                }
+              </button>
+            </div>
+          </div>
+
           <div className="form-actions">
             {isEditing && (
               <button type="button" className="form-btn-cancel" onClick={cancelarEdicion}>
                 <X size={15} strokeWidth={2} /> {t.pedidosCancelar}
               </button>
             )}
-            <button type="submit" className="form-btn-submit">
+            <button type="submit" className="form-btn-submit" disabled={uploadingComp}>
               <Save size={15} strokeWidth={2} />
               {isEditing ? t.pedidosGuardarCambios : t.pedidosGuardar}
             </button>

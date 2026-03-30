@@ -21,6 +21,7 @@ export default function Breadcrumb() {
     "fecha-entrega":       t.navFechaEntrega,
     "fecha-inicio":        t.navFechaInicio,
     alertas:               t.navAlertas,
+    pagos:                 t.navPagos,
     configuracion:         t.navConfiguracion,
     "reporte-tecnico":     t.navReporte,
   };
