@@ -129,18 +129,21 @@ export async function deleteCV(nombre: string): Promise<void> {
   await deleteObject(storageRef);
 }
 
-// ─── COMPROBANTES DE PAGO ─────────────────────────────────────────────────────
+// ─── COMPROBANTES DE PAGO (Cloudinary) ───────────────────────────────────────
 export async function uploadComprobante(file: File): Promise<{ url: string; nombre: string }> {
-  const nombre = `${Date.now()}_${file.name}`;
-  const storageRef = ref(storage, `comprobantes/${nombre}`);
-  await uploadBytes(storageRef, file);
-  const url = await getDownloadURL(storageRef);
-  return { url, nombre };
-}
-
-export async function deleteComprobante(nombre: string): Promise<void> {
-  const storageRef = ref(storage, `comprobantes/${nombre}`);
-  await deleteObject(storageRef);
+  const cloudName    = process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME;
+  const uploadPreset = process.env.NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET;
+  const formData = new FormData();
+  formData.append("file", file);
+  formData.append("upload_preset", uploadPreset!);
+  formData.append("folder", "comprobantes");
+  const res = await fetch(`https://api.cloudinary.com/v1_1/${cloudName}/auto/upload`, {
+    method: "POST",
+    body: formData,
+  });
+  if (!res.ok) throw new Error("Error al subir a Cloudinary");
+  const data = await res.json();
+  return { url: data.secure_url, nombre: data.public_id };
 }
 
 // ─── NOTIFICACIONES ───────────────────────────────────────────────────────────

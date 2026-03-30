@@ -5,14 +5,14 @@ import {
   User, Globe, Monitor, Smartphone, MessageSquare, Save,
   Layers, Zap, Activity, Code2, Search, CalendarCheck, CalendarClock,
   FolderOpen, Loader2, Pencil, X, Trash2,
-  DollarSign, Link, ExternalLink,
+  DollarSign, Upload, FileCheck, ExternalLink,
 } from "lucide-react";
 import CustomSelect  from "../../components/CustomSelect";
 import DatePicker    from "../../components/DatePicker";
 import ConfirmModal  from "../../components/ConfirmModal";
 import Pagination    from "../../components/Pagination";
 import { showToast } from "../../components/Toast";
-import { getPedidos, addPedido, updatePedido, deletePedido, getClientes, syncPedidoCancelado, syncPedidoConcluido, removeProyectoCancelado, removeProyectoConcluido } from "../../lib/services";
+import { getPedidos, addPedido, updatePedido, deletePedido, getClientes, syncPedidoCancelado, syncPedidoConcluido, removeProyectoCancelado, removeProyectoConcluido, uploadComprobante } from "../../lib/services";
 import { useLang } from "../../lib/LangContext";
 
 const TECNOLOGIAS = [
@@ -128,7 +128,10 @@ export default function PedidosPage() {
   const [loadingData, setLoadingData] = useState(true);
   const [deletingId,  setDeletingId]  = useState<string | null>(null);
   const [confirmDel,  setConfirmDel]  = useState(false);
-  const formRef = useRef<HTMLDivElement>(null);
+  const formRef             = useRef<HTMLDivElement>(null);
+  const comprobanteInputRef = useRef<HTMLInputElement>(null);
+  const [comprobanteFile,   setComprobanteFile]   = useState<File | null>(null);
+  const [uploadingComp,     setUploadingComp]     = useState(false);
 
   useEffect(() => {
     Promise.all([getPedidos(), getClientes()]).then(([peds, clts]) => {
@@ -180,7 +183,24 @@ export default function PedidosPage() {
       const hoy = new Date().toISOString().split("T")[0];
       let pedidoId = editId;
 
-      const saveData = { ...form, tecnologias };
+      let comprobanteUrl    = form.comprobante;
+      let comprobanteNombre = form.comprobanteNombre;
+      if (comprobanteFile) {
+        setUploadingComp(true);
+        try {
+          const result = await uploadComprobante(comprobanteFile);
+          comprobanteUrl    = result.url;
+          comprobanteNombre = result.nombre;
+          showToast(t.pedidosComprobanteOk, "success");
+        } catch {
+          showToast(t.pedidosComprobanteError, "error");
+          setUploadingComp(false);
+          return;
+        }
+        setUploadingComp(false);
+        setComprobanteFile(null);
+      }
+      const saveData = { ...form, tecnologias, comprobante: comprobanteUrl, comprobanteNombre };
 
       if (editId) {
         await updatePedido(editId, saveData);
@@ -242,6 +262,7 @@ export default function PedidosPage() {
       comprobanteNombre: String(p.comprobanteNombre  ?? ""),
     });
     setTecnologias((p.tecnologias as string[]) ?? []);
+    setComprobanteFile(null);
     setErrors({});
     setTimeout(() => formRef.current?.scrollIntoView({ behavior: "smooth", block: "start" }), 50);
   }
@@ -518,27 +539,46 @@ export default function PedidosPage() {
           </div>
 
           <div className="form-field" style={{ marginTop: "1rem" }}>
-            <label className="form-label">{t.pedidosLinkComprobante}</label>
-            <div className="form-icon-wrap">
-              <Link size={14} className="form-icon" strokeWidth={1.8} />
+            <label className="form-label">{t.pedidosSubirComprobante}</label>
+            <div style={{ display: "flex", flexDirection: "column", gap: "0.5rem" }}>
+              {form.comprobante && !comprobanteFile && (
+                <div style={{ display: "flex", alignItems: "center", gap: "0.5rem", fontSize: "0.82rem", color: "#6c63ff" }}>
+                  <FileCheck size={14} strokeWidth={2} />
+                  <span>{t.pedidosComprobanteActual}:</span>
+                  <a href={form.comprobante} target="_blank" rel="noreferrer" style={{ display: "inline-flex", alignItems: "center", gap: "0.25rem", color: "#6c63ff", textDecoration: "underline" }}>
+                    {t.pedidosVerComprobante} <ExternalLink size={12} />
+                  </a>
+                </div>
+              )}
+              {comprobanteFile && (
+                <div style={{ display: "flex", alignItems: "center", gap: "0.5rem", fontSize: "0.82rem", color: "#059669" }}>
+                  <FileCheck size={14} strokeWidth={2} />
+                  <span>{comprobanteFile.name}</span>
+                  <button type="button" onClick={() => setComprobanteFile(null)} style={{ background: "none", border: "none", cursor: "pointer", color: "#9ca3af", padding: 0 }}>
+                    <X size={13} />
+                  </button>
+                </div>
+              )}
               <input
-                type="url"
-                className="form-input has-icon"
-                placeholder={t.pedidosLinkComprobantePH}
-                value={form.comprobante}
-                onChange={e => setForm(f => ({ ...f, comprobante: e.target.value }))}
+                ref={comprobanteInputRef}
+                type="file"
+                accept="image/*,.pdf"
+                style={{ display: "none" }}
+                onChange={e => { const f = e.target.files?.[0]; if (f) setComprobanteFile(f); e.target.value = ""; }}
               />
-            </div>
-            {form.comprobante && (
-              <a
-                href={form.comprobante}
-                target="_blank"
-                rel="noreferrer"
-                style={{ display: "inline-flex", alignItems: "center", gap: "0.3rem", fontSize: "0.8rem", color: "#6c63ff", marginTop: "0.35rem" }}
+              <button
+                type="button"
+                className="form-btn-cancel"
+                style={{ width: "fit-content" }}
+                onClick={() => comprobanteInputRef.current?.click()}
+                disabled={uploadingComp}
               >
-                <ExternalLink size={12} /> {t.pedidosVerComprobante}
-              </a>
-            )}
+                {uploadingComp
+                  ? <><Loader2 size={14} className="panel-loading-spin" /> {t.pedidosComprobanteSubiendo}</>
+                  : <><Upload size={14} strokeWidth={2} /> {t.pedidosSubirComprobante}</>
+                }
+              </button>
+            </div>
           </div>
 
           <div className="form-actions">
@@ -547,7 +587,7 @@ export default function PedidosPage() {
                 <X size={15} strokeWidth={2} /> {t.pedidosCancelar}
               </button>
             )}
-            <button type="submit" className="form-btn-submit">
+            <button type="submit" className="form-btn-submit" disabled={uploadingComp}>
               <Save size={15} strokeWidth={2} />
               {isEditing ? t.pedidosGuardarCambios : t.pedidosGuardar}
             </button>
