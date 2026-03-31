@@ -1721,12 +1721,16 @@ body {
 .reporte-table th {
   background: #f8fafc; color: #9ca3af; font-weight: 700;
   font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.05em;
-  padding: 0.75rem 1rem; text-align: left; white-space: nowrap;
+  padding: 0.65rem 0.75rem; text-align: left;
   border-bottom: 1.5px solid #f0f0f0;
 }
 .reporte-table td {
-  padding: 0.75rem 1rem; border-bottom: 1px solid #f8fafc;
+  padding: 0.65rem 0.75rem; border-bottom: 1px solid #f8fafc;
   color: #374151; vertical-align: middle;
+}
+/* Use on tables with table-layout:fixed to clip long text with ellipsis */
+.reporte-table.fixed-layout td {
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 0;
 }
 .reporte-table tr:last-child td { border-bottom: none; }
 .reporte-table tr:hover td { background: #fafafa; }

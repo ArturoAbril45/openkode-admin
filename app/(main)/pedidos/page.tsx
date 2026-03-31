@@ -686,7 +686,17 @@ export default function PedidosPage() {
       </div>
 
       <div className="reporte-card">
-        <table className="reporte-table">
+        <table className="reporte-table fixed-layout" style={{ tableLayout: "fixed" }}>
+          <colgroup>
+            <col style={{ width: "20%" }} />
+            <col style={{ width: "14%" }} />
+            <col style={{ width: "13%" }} />
+            <col style={{ width: "11%" }} />
+            <col style={{ width: "14%" }} />
+            <col style={{ width: "10%" }} />
+            <col style={{ width: "10%" }} />
+            <col style={{ width: "8%" }} />
+          </colgroup>
           <thead>
             <tr>
               <th>{t.dashProyecto}</th>
@@ -713,19 +723,19 @@ export default function PedidosPage() {
                 <td className="reporte-td-bold">{String(p.proyecto ?? "—")}</td>
                 <td>{String(p.cliente ?? "—")}</td>
                 <td className="reporte-td-gray">{SERVICIOS_LABEL[String(p.servicio ?? "")] ?? String(p.servicio ?? "—")}</td>
-                <td>
+                <td style={{ overflow: "visible", whiteSpace: "normal" }}>
                   <span className={`pedido-tipo-badge ${PRIORIDAD_COLORS[String(p.prioridad)] ?? ""}`} style={{ padding: "0.2rem 0.65rem", fontSize: "0.73rem", textTransform: "capitalize" }}>
                     {PRIORIDADES.find(pr => pr.value === String(p.prioridad))?.label ?? String(p.prioridad ?? "")}
                   </span>
                 </td>
-                <td>
+                <td style={{ overflow: "visible", whiteSpace: "normal" }}>
                   <span className={`pedido-tipo-badge ${ESTADO_COLORS[String(p.estado)] ?? ""}`} style={{ padding: "0.2rem 0.65rem", fontSize: "0.73rem" }}>
                     {ESTADOS.find(e => e.value === String(p.estado))?.label ?? String(p.estado)}
                   </span>
                 </td>
                 <td className="reporte-td-gray">{p.fecha        ? formatFecha(String(p.fecha), locale)        : "—"}</td>
                 <td className="reporte-td-gray">{p.fechaEntrega  ? formatFecha(String(p.fechaEntrega), locale) : "—"}</td>
-                <td>
+                <td style={{ overflow: "visible", whiteSpace: "normal" }}>
                   <div style={{ display:"flex", gap:"0.4rem" }}>
                     <button
                       className="table-edit-btn"
