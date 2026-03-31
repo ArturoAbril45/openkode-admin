@@ -538,27 +538,6 @@ export default function PedidosPage() {
                     step="0.01"
                     className="form-input has-icon"
                     placeholder={form.tipoPago === "mensual" ? t.clientesEjValorMensual : t.clientesEjValorTotal}
-                    value={form.valorPago}
-                    onChange={e => setForm(f => ({ ...f, valorPago: e.target.value }))}
-                  />
-                </div>
-              </div>
-            )}
-
-
-            {form.tipoPago && (
-              <div className="form-field">
-                <label className="form-label">
-                  {form.tipoPago === "mensual" ? t.clientesValorMensual : t.clientesValorTotal}
-                </label>
-                <div className="form-icon-wrap">
-                  <DollarSign size={14} className="form-icon" strokeWidth={1.8} />
-                  <input
-                    type="number"
-                    min="0"
-                    step="0.01"
-                    className="form-input has-icon"
-                    placeholder={form.tipoPago === "mensual" ? t.clientesEjValorMensual : t.clientesEjValorTotal}
                     value={form.montoTotal}
                     onChange={e => setForm(f => ({ ...f, montoTotal: e.target.value }))}
                   />
