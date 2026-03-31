@@ -500,10 +500,13 @@ export default function PedidosPage() {
                 icon={<FileText size={14} className="form-icon" strokeWidth={1.8} />}
                 value={form.contrato}
                 placeholder={t.clientesSelDuracion}
-                options={Array.from({ length: 24 }, (_, i) => i + 1).map(m => ({
-                  value: String(m),
-                  label: m === 1 ? `1 ${t.clientesMes}` : `${m} ${t.clientesMeses}`,
-                }))}
+                options={[
+                  { value: "sin-contrato", label: t.clientesSinContrato },
+                  ...Array.from({ length: 24 }, (_, i) => i + 1).map(m => ({
+                    value: String(m),
+                    label: m === 1 ? `1 ${t.clientesMes}` : `${m} ${t.clientesMeses}`,
+                  })),
+                ]}
                 onChange={v => setForm(f => ({ ...f, contrato: v }))}
               />
             </div>
