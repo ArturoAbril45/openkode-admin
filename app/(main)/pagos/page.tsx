@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import {
   DollarSign, Search, Loader2,
-  CheckCircle2, AlertCircle, MinusCircle, CreditCard, Eye, X, Download,
+  CheckCircle2, AlertCircle, MinusCircle, CreditCard, Eye, X,
 } from "lucide-react";
 import Pagination  from "../../components/Pagination";
 import { getPedidos } from "../../lib/services";
@@ -78,22 +78,12 @@ export default function PagosPage() {
           >
             <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "0.75rem 1rem", borderBottom: "1px solid #f0f0f0" }}>
               <p style={{ margin: 0, fontWeight: 600, fontSize: "0.9rem", color: "#1f2937" }}>{modalProyecto}</p>
-              <div style={{ display: "flex", gap: "0.5rem" }}>
-                <a
-                  href={modalUrl}
-                  target="_blank"
-                  rel="noreferrer"
-                  style={{ display: "inline-flex", alignItems: "center", gap: "0.3rem", fontSize: "0.78rem", color: "#6c63ff", background: "#ede9fe", padding: "0.3rem 0.7rem", borderRadius: "6px", textDecoration: "none", fontWeight: 500 }}
-                >
-                  <Download size={13} /> Abrir original
-                </a>
-                <button
-                  onClick={() => setModalUrl(null)}
-                  style={{ background: "#f3f4f6", border: "none", borderRadius: "6px", padding: "0.3rem 0.5rem", cursor: "pointer", display: "flex", alignItems: "center", color: "#6b7280" }}
-                >
-                  <X size={16} />
-                </button>
-              </div>
+              <button
+                onClick={() => setModalUrl(null)}
+                style={{ background: "#f3f4f6", border: "none", borderRadius: "6px", padding: "0.3rem 0.5rem", cursor: "pointer", display: "flex", alignItems: "center", color: "#6b7280" }}
+              >
+                <X size={16} />
+              </button>
             </div>
             <div style={{ overflow: "auto", maxHeight: "80vh", display: "flex", alignItems: "center", justifyContent: "center", background: "#f9fafb" }}>
               {isImage(modalUrl) ? (
