@@ -4,9 +4,10 @@ import { useState, useEffect } from "react";
 import {
   DollarSign, Search, Loader2,
   CheckCircle2, AlertCircle, MinusCircle, CreditCard, Eye, X,
-  ChevronLeft, ChevronRight,
+  ChevronLeft, ChevronRight, Download,
 } from "lucide-react";
 import Pagination  from "../../components/Pagination";
+import BarChart    from "../../components/BarChart";
 import { getPedidos } from "../../lib/services";
 import { useLang } from "../../lib/LangContext";
 
@@ -61,6 +62,40 @@ export default function PagosPage() {
     { label: t.pagosResumenPagado,    value: fmt(totalPagado),    color: "#059669", bg: "#d1fae5", icon: CheckCircle2 },
     { label: t.pagosResumenPendiente, value: fmt(totalPendiente), color: "#dc2626", bg: "#fee2e2", icon: AlertCircle  },
   ];
+
+  function getIngresosPorMes() {
+    const meses = [];
+    const now = new Date();
+    for (let i = 5; i >= 0; i--) {
+      const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+      const label = d.toLocaleDateString("es", { month: "short" });
+      const value = pedidos
+        .filter(p => {
+          const f = p.fecha ? new Date((p.fecha as string) + "T00:00:00") : null;
+          return f && f.getMonth() === d.getMonth() && f.getFullYear() === d.getFullYear();
+        })
+        .reduce((s, p) => s + (parseFloat(String(p.montoPagado ?? 0)) || 0), 0);
+      meses.push({ label, value: Math.round(value) });
+    }
+    return meses;
+  }
+
+  function exportarCSV() {
+    const cols = ["Proyecto","Cliente","Total","Pagado","Pendiente","Estado pago"];
+    const rows = pedidos.map(p => {
+      const total   = parseFloat(String(p.montoTotal  ?? "")) || 0;
+      const pagado  = parseFloat(String(p.montoPagado ?? "")) || 0;
+      const pend    = Math.max(0, total - pagado);
+      const estado  = estadoPago(p);
+      return [String(p.proyecto??""), String(p.cliente??""), total.toFixed(2), pagado.toFixed(2), pend.toFixed(2), estado].join(",");
+    });
+    const csv = [cols.join(","), ...rows].join("\n");
+    const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+    const url  = URL.createObjectURL(blob);
+    const a    = document.createElement("a");
+    a.href = url; a.download = "pagos.csv"; a.click();
+    URL.revokeObjectURL(url);
+  }
 
   function estadoPago(p: Record<string, unknown>) {
     const total  = parseFloat(String(p.montoTotal  ?? "")) || 0;
@@ -154,6 +189,13 @@ export default function PagosPage() {
         </div>
       )}
 
+      {!loadingData && (
+        <div style={{ background:"#fff", borderRadius:"16px", border:"1.5px solid #e5e7eb", padding:"1.25rem", marginBottom:"1.25rem" }}>
+          <p style={{ margin:"0 0 0.75rem", fontWeight:700, fontSize:"0.85rem", color:"#0f0f1a" }}>Ingresos cobrados por mes (USD)</p>
+          <BarChart bars={getIngresosPorMes()} color="#059669" height={110} />
+        </div>
+      )}
+
       <div className="panel-header" style={{ marginTop: "0.5rem", flexWrap: "wrap", gap: "0.75rem" }}>
         <div style={{ display: "flex", gap: "0.4rem", flexWrap: "wrap" }}>
           {(["todos","saldado","deuda","sin-info"] as const).map(f => {
@@ -175,6 +217,10 @@ export default function PagosPage() {
           })}
         </div>
         <div style={{ display: "flex", alignItems: "center", gap: "0.75rem", marginLeft: "auto" }}>
+          <button onClick={exportarCSV}
+            style={{ display:"inline-flex", alignItems:"center", gap:"0.35rem", padding:"0.3rem 0.75rem", borderRadius:"8px", background:"#f0fdf4", color:"#059669", border:"1.5px solid #bbf7d0", fontWeight:600, fontSize:"0.78rem", cursor:"pointer" }}>
+            <Download size={13} strokeWidth={2} /> CSV
+          </button>
           <p className="panel-subtitle" style={{ margin: 0 }}>
             {loadingData ? t.pagosCargando : `${filtered.length} ${filtered.length !== 1 ? t.pagosPlural : t.pagosSingular}`}
           </p>

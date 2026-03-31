@@ -5,14 +5,14 @@ import {
   User, Globe, Monitor, Smartphone, MessageSquare, Save,
   Layers, Zap, Activity, Code2, Search, CalendarCheck, CalendarClock,
   FolderOpen, Loader2, Pencil, X, Trash2,
-  DollarSign, Upload, FileCheck, ExternalLink, FileText, Wallet,
+  DollarSign, Upload, FileCheck, ExternalLink, FileText, Wallet, History,
 } from "lucide-react";
 import CustomSelect  from "../../components/CustomSelect";
 import DatePicker    from "../../components/DatePicker";
 import ConfirmModal  from "../../components/ConfirmModal";
 import Pagination    from "../../components/Pagination";
 import { showToast } from "../../components/Toast";
-import { getPedidos, addPedido, updatePedido, deletePedido, getClientes, syncPedidoCancelado, syncPedidoConcluido, removeProyectoCancelado, removeProyectoConcluido, uploadComprobante } from "../../lib/services";
+import { getPedidos, addPedido, updatePedido, deletePedido, getClientes, syncPedidoCancelado, syncPedidoConcluido, removeProyectoCancelado, removeProyectoConcluido, uploadComprobante, pushHistorialPedido, addNotificacion } from "../../lib/services";
 import { useLang } from "../../lib/LangContext";
 
 const TECNOLOGIAS = [
@@ -135,6 +135,8 @@ export default function PedidosPage() {
   const [comprobantesNombres, setComprobantesNombres] = useState<string[]>([]);
   const [comprobanteFiles,    setComprobanteFiles]    = useState<File[]>([]);
   const [uploadingComp,       setUploadingComp]       = useState(false);
+  const [quickEstadoId,       setQuickEstadoId]       = useState<string | null>(null);
+  const [historialPedido,     setHistorialPedido]     = useState<Record<string,unknown> | null>(null);
 
   useEffect(() => {
     Promise.all([getPedidos(), getClientes()]).then(([peds, clts]) => {
@@ -208,12 +210,21 @@ export default function PedidosPage() {
       const saveData = { ...form, tecnologias, comprobantes: updatedComprobantes, comprobantesNombres: updatedNombres };
 
       if (editId) {
+        const anterior = pedidos.find(p => p.id === editId);
         await updatePedido(editId, saveData);
+        if (anterior && anterior.estado !== saveData.estado) {
+          await pushHistorialPedido(editId, { estado: saveData.estado as string, fecha: new Date().toISOString() });
+          await addNotificacion({ mensaje: `Pedido "${saveData.proyecto}" cambió a ${saveData.estado}`, seccion: "/pedidos" });
+        }
+        if (updatedComprobantes.length > comprobantes.length) {
+          await addNotificacion({ mensaje: `Comprobante subido en "${saveData.proyecto}"`, seccion: "/pagos" });
+        }
         showToast(t.pedidosActualizadoOk, "success");
         setEditId(null);
       } else {
         const ref = await addPedido(saveData);
         pedidoId = ref.id;
+        await addNotificacion({ mensaje: `Nuevo pedido registrado: "${saveData.proyecto}"`, seccion: "/pedidos" });
         showToast(t.pedidosGuardadoOk, "success");
       }
 
@@ -308,6 +319,40 @@ export default function PedidosPage() {
     setErrors({});
   }
 
+  async function cambiarEstado(pedido: Record<string, unknown>, nuevoEstado: string) {
+    setQuickEstadoId(null);
+    const hoy = new Date().toISOString().split("T")[0];
+    const id  = pedido.id as string;
+    try {
+      await updatePedido(id, { estado: nuevoEstado });
+      await pushHistorialPedido(id, { estado: nuevoEstado, fecha: new Date().toISOString() });
+      await addNotificacion({ mensaje: `Pedido "${pedido.proyecto}" → ${nuevoEstado}`, seccion: "/pedidos" });
+      if (nuevoEstado === "cancelado") {
+        await syncPedidoCancelado(id, {
+          cliente: pedido.cliente, clienteId: pedido.clienteId,
+          proyecto: pedido.proyecto, tipo: pedido.tipo, servicio: pedido.servicio,
+          fechaInicio: pedido.fecha, fechaCancelacion: hoy, tecnologias: pedido.tecnologias ?? [], motivo: "",
+        });
+        await removeProyectoConcluido(id);
+      } else if (nuevoEstado === "entregado") {
+        await syncPedidoConcluido(id, {
+          cliente: pedido.cliente, clienteId: pedido.clienteId,
+          proyecto: pedido.proyecto, tipo: pedido.tipo, servicio: pedido.servicio,
+          fechaInicio: pedido.fecha, fechaEntrega: pedido.fechaEntrega,
+          tecnologias: pedido.tecnologias ?? [], mensajeFinal: "",
+        });
+        await removeProyectoCancelado(id);
+      } else {
+        await removeProyectoCancelado(id);
+        await removeProyectoConcluido(id);
+      }
+      setPedidos(prev => prev.map(p => p.id === id ? { ...p, estado: nuevoEstado } : p));
+      showToast(t.pedidosActualizadoOk, "success");
+    } catch {
+      showToast(t.pedidosGuardadoError, "error");
+    }
+  }
+
   const filtered = pedidos.filter(p =>
     String(p.proyecto ?? "").toLowerCase().includes(search.toLowerCase()) ||
     String(p.cliente  ?? "").toLowerCase().includes(search.toLowerCase()) ||
@@ -318,6 +363,42 @@ export default function PedidosPage() {
 
   return (
     <>
+      {/* Modal historial */}
+      {historialPedido && (
+        <div style={{ position:"fixed", inset:0, background:"rgba(0,0,0,0.5)", zIndex:9999, display:"flex", alignItems:"center", justifyContent:"center", padding:"1rem" }}
+          onClick={() => setHistorialPedido(null)}>
+          <div style={{ background:"#fff", borderRadius:"16px", width:"100%", maxWidth:"420px", maxHeight:"80vh", overflow:"auto", boxShadow:"0 20px 60px rgba(0,0,0,0.25)" }}
+            onClick={e => e.stopPropagation()}>
+            <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", padding:"1rem 1.25rem", borderBottom:"1px solid #f0f0f0" }}>
+              <div style={{ display:"flex", alignItems:"center", gap:"0.5rem" }}>
+                <History size={15} color="#6c63ff" />
+                <span style={{ fontWeight:700, fontSize:"0.9rem", color:"#0f0f1a" }}>{String(historialPedido.proyecto ?? "")}</span>
+              </div>
+              <button onClick={() => setHistorialPedido(null)} style={{ background:"#f3f4f6", border:"none", borderRadius:"6px", padding:"0.3rem 0.5rem", cursor:"pointer", color:"#6b7280" }}>
+                <X size={15} />
+              </button>
+            </div>
+            <div style={{ padding:"0.75rem 1.25rem" }}>
+              {!Array.isArray(historialPedido.historial) || (historialPedido.historial as unknown[]).length === 0 ? (
+                <p style={{ color:"#9ca3af", fontSize:"0.85rem", textAlign:"center", padding:"1rem 0" }}>Sin historial registrado</p>
+              ) : ([...(historialPedido.historial as {estado:string;fecha:string}[])].reverse().map((h, i) => (
+                <div key={i} style={{ display:"flex", gap:"0.75rem", alignItems:"flex-start", paddingBottom:"0.75rem", borderBottom: i < (historialPedido.historial as unknown[]).length - 1 ? "1px solid #f8fafc" : "none", marginBottom:"0.5rem" }}>
+                  <div style={{ width:8, height:8, borderRadius:"50%", background:"#6c63ff", marginTop:"0.35rem", flexShrink:0 }} />
+                  <div>
+                    <span className={`pedido-tipo-badge ${ESTADO_COLORS[h.estado] ?? ""}`} style={{ padding:"0.1rem 0.5rem", fontSize:"0.7rem" }}>
+                      {ESTADOS.find(e => e.value === h.estado)?.label ?? h.estado}
+                    </span>
+                    <p style={{ margin:"0.2rem 0 0", fontSize:"0.73rem", color:"#9ca3af" }}>
+                      {new Date(h.fecha).toLocaleDateString(locale, { day:"2-digit", month:"short", year:"numeric", hour:"2-digit", minute:"2-digit" })}
+                    </p>
+                  </div>
+                </div>
+              )))}
+            </div>
+          </div>
+        </div>
+      )}
+
       <div className="panel-header">
         <div>
           <h2 className="panel-title">{t.pedidosTitle}</h2>
@@ -737,10 +818,25 @@ export default function PedidosPage() {
                     {PRIORIDADES.find(pr => pr.value === String(p.prioridad))?.label ?? String(p.prioridad ?? "")}
                   </span>
                 </td>
-                <td style={{ overflow: "visible", whiteSpace: "normal" }}>
-                  <span className={`pedido-tipo-badge ${ESTADO_COLORS[String(p.estado)] ?? ""}`} style={{ padding: "0.2rem 0.65rem", fontSize: "0.73rem" }}>
+                <td style={{ overflow: "visible", whiteSpace: "normal", position: "relative" }}>
+                  <button
+                    onClick={() => setQuickEstadoId(quickEstadoId === String(p.id) ? null : String(p.id))}
+                    className={`pedido-tipo-badge ${ESTADO_COLORS[String(p.estado)] ?? ""}`}
+                    style={{ padding: "0.2rem 0.65rem", fontSize: "0.73rem", border: "none", cursor: "pointer" }}
+                  >
                     {ESTADOS.find(e => e.value === String(p.estado))?.label ?? String(p.estado)}
-                  </span>
+                  </button>
+                  {quickEstadoId === String(p.id) && (
+                    <div style={{ position:"absolute", top:"calc(100% + 4px)", left:0, background:"#fff", border:"1.5px solid #e5e7eb", borderRadius:"10px", boxShadow:"0 8px 24px rgba(0,0,0,0.12)", zIndex:999, minWidth:"150px", overflow:"hidden" }}>
+                      {ESTADOS.map(est => (
+                        <button key={est.value} onClick={() => cambiarEstado(p, est.value)}
+                          style={{ display:"block", width:"100%", textAlign:"left", padding:"0.45rem 0.85rem", fontSize:"0.8rem", fontWeight: est.value === String(p.estado) ? 700 : 400, background: est.value === String(p.estado) ? "#f5f3ff" : "transparent", color: est.value === String(p.estado) ? "#6c63ff" : "#374151", border:"none", cursor:"pointer", borderBottom:"1px solid #f8fafc" }}
+                        >
+                          {est.label}
+                        </button>
+                      ))}
+                    </div>
+                  )}
                 </td>
                 <td className="reporte-td-gray">{p.fecha        ? formatFecha(String(p.fecha), locale)        : "—"}</td>
                 <td className="reporte-td-gray">{p.fechaEntrega  ? formatFecha(String(p.fechaEntrega), locale) : "—"}</td>
@@ -758,6 +854,14 @@ export default function PedidosPage() {
                 </td>
                 <td style={{ overflow: "visible", whiteSpace: "normal" }}>
                   <div style={{ display:"flex", gap:"0.4rem" }}>
+                    <button
+                      className="table-edit-btn"
+                      onClick={() => setHistorialPedido(p)}
+                      title="Historial"
+                      style={{ color:"#6c63ff" }}
+                    >
+                      <History size={13} strokeWidth={2} />
+                    </button>
                     <button
                       className="table-edit-btn"
                       onClick={() => editarPedido(p)}

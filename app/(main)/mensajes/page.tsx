@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useRef, useEffect } from "react";
+import { useSearchParams } from "next/navigation";
 import { Send, PanelLeftClose, PanelLeftOpen, Search, Loader2 } from "lucide-react";
 import { getClientes, getMensajes, addMensaje } from "../../lib/services";
 import { useLang } from "../../lib/LangContext";
@@ -15,6 +16,8 @@ function horaActual() {
 
 export default function MensajesPage() {
   const { t } = useLang();
+  const searchParams = useSearchParams();
+  const clienteIdParam = searchParams.get("clienteId");
   const [clientes,       setClientes]       = useState<Cliente[]>([]);
   const [loadingClients, setLoadingClients] = useState(true);
   const [seleccionado,   setSeleccionado]   = useState<Cliente | null>(null);
@@ -29,9 +32,15 @@ export default function MensajesPage() {
   useEffect(() => {
     getClientes().then(data => {
       setClientes(data);
-      if (data.length > 0) setSeleccionado(data[0]);
+      if (clienteIdParam) {
+        const found = data.find(c => (c as Record<string,unknown>).id === clienteIdParam);
+        setSeleccionado(found ?? (data.length > 0 ? data[0] : null));
+      } else if (data.length > 0) {
+        setSeleccionado(data[0]);
+      }
       setLoadingClients(false);
     });
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   useEffect(() => {

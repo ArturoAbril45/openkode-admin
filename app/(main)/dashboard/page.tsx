@@ -1,9 +1,9 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Users, Package, MessageSquare, FolderX, FolderCheck, CalendarClock, ChevronRight, Clock, AlertTriangle } from "lucide-react";
+import { Users, Package, MessageSquare, FolderX, FolderCheck, CalendarClock, ChevronRight, Clock, AlertTriangle, Bell, Zap } from "lucide-react";
 import Link from "next/link";
-import { getClientes, getPedidos, getProyectosCancelados, getProyectosConcluidos } from "../../lib/services";
+import { getClientes, getPedidos, getProyectosCancelados, getProyectosConcluidos, addNotificacion } from "../../lib/services";
 import DonutChart from "../../components/DonutChart";
 import BarChart   from "../../components/BarChart";
 import { useLang } from "../../lib/LangContext";
@@ -41,9 +41,19 @@ export default function DashboardPage() {
 
   useEffect(() => {
     getClientes().then(setClientes);
-    getPedidos().then(setPedidos);
     getProyectosCancelados().then(setCancelados);
     getProyectosConcluidos().then(setConcluidos);
+    getPedidos().then(peds => {
+      setPedidos(peds);
+      // Notificaciones automáticas: vencidos hoy
+      const hoy = new Date(); hoy.setHours(0,0,0,0);
+      (peds as Record<string,unknown>[]).forEach(p => {
+        if (!p.fechaEntrega || p.estado === "entregado" || p.estado === "cancelado") return;
+        const dias = Math.ceil((new Date((p.fechaEntrega as string) + "T00:00:00").getTime() - hoy.getTime()) / 86400000);
+        if (dias === 0) addNotificacion({ mensaje: `⚠️ Entrega hoy: "${p.proyecto}"`, seccion: "/alertas" });
+        else if (dias < 0) addNotificacion({ mensaje: `🔴 Vencido: "${p.proyecto}" (${Math.abs(dias)}d)`, seccion: "/alertas" });
+      });
+    });
   }, []);
 
   const enDesarrollo = pedidos.filter(p => p.estado === "desarrollo").length;
@@ -83,6 +93,18 @@ export default function DashboardPage() {
   ];
 
   const barData = getPedidosPorMes(pedidos, locale);
+
+  const pedidoReciente = pedidos.length > 0 ? pedidos[0] : null;
+
+  // Alertas resumen
+  function diasRestantesLocal(iso: string) {
+    const hoy = new Date(); hoy.setHours(0,0,0,0);
+    return Math.ceil((new Date(iso + "T00:00:00").getTime() - hoy.getTime()) / 86400000);
+  }
+  const activos = pedidos.filter(p => p.estado !== "entregado" && p.estado !== "cancelado");
+  const alertasCriticas = activos.filter(p => p.fechaEntrega && diasRestantesLocal(p.fechaEntrega as string) <= 0).length;
+  const alertasAdvertencia = activos.filter(p => p.fechaEntrega && diasRestantesLocal(p.fechaEntrega as string) > 0 && diasRestantesLocal(p.fechaEntrega as string) <= 7).length;
+  const totalAlertas = alertasCriticas + alertasAdvertencia;
 
   const pedidosActivos = pedidos
     .filter(p => p.estado === "pendiente" || p.estado === "desarrollo" || p.estado === "revision")
@@ -223,6 +245,65 @@ export default function DashboardPage() {
               </tbody>
             </table>
           )}
+        </div>
+
+      </div>
+
+      <div className="dash-pedidos-grid" style={{ marginTop: "1.25rem" }}>
+
+        {/* Pedido más reciente */}
+        <div className="dash-pedidos-card">
+          <div className="dash-pedidos-header">
+            <Package size={16} color="#6c63ff" strokeWidth={2} />
+            <span>Pedido más reciente</span>
+          </div>
+          {!pedidoReciente ? (
+            <p style={{ padding:"1rem", color:"#9ca3af", fontSize:"0.82rem" }}>Sin pedidos</p>
+          ) : (
+            <div style={{ padding:"0.75rem 1rem" }}>
+              <p style={{ margin:"0 0 0.2rem", fontWeight:700, fontSize:"0.9rem", color:"#0f0f1a" }}>{String(pedidoReciente.proyecto ?? "")}</p>
+              <p style={{ margin:"0 0 0.6rem", fontSize:"0.8rem", color:"#6b7280" }}>{String(pedidoReciente.cliente ?? "")}</p>
+              <div style={{ display:"flex", gap:"0.5rem", flexWrap:"wrap" }}>
+                <span className={`dash-badge ${ESTADO_BADGE[String(pedidoReciente.estado)] ?? "badge-yellow"}`}>
+                  {ESTADO_LABEL[String(pedidoReciente.estado)] ?? String(pedidoReciente.estado)}
+                </span>
+                {pedidoReciente.fecha ? (
+                  <span style={{ fontSize:"0.73rem", color:"#9ca3af" }}>
+                    {new Date((pedidoReciente.fecha as string) + "T00:00:00").toLocaleDateString(locale, { day:"2-digit", month:"short", year:"numeric" })}
+                  </span>
+                ) : null}
+              </div>
+            </div>
+          )}
+        </div>
+
+        {/* Resumen alertas */}
+        <div className="dash-pedidos-card">
+          <div className="dash-pedidos-header">
+            <Bell size={16} color="#ef4444" strokeWidth={2} />
+            <span>Alertas activas</span>
+            {totalAlertas > 0 && <span style={{ marginLeft:"auto", background:"#ef4444", color:"#fff", borderRadius:"50%", width:20, height:20, display:"flex", alignItems:"center", justifyContent:"center", fontSize:"0.7rem", fontWeight:700 }}>{totalAlertas}</span>}
+          </div>
+          <div style={{ padding:"0.75rem 1rem", display:"flex", flexDirection:"column", gap:"0.5rem" }}>
+            <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center" }}>
+              <div style={{ display:"flex", alignItems:"center", gap:"0.4rem", fontSize:"0.82rem", color:"#374151" }}>
+                <Zap size={13} color="#ef4444" /> Vencidas / vencen hoy
+              </div>
+              <span style={{ fontWeight:700, color: alertasCriticas > 0 ? "#ef4444" : "#9ca3af" }}>{alertasCriticas}</span>
+            </div>
+            <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center" }}>
+              <div style={{ display:"flex", alignItems:"center", gap:"0.4rem", fontSize:"0.82rem", color:"#374151" }}>
+                <Clock size={13} color="#f59e0b" /> Próximas (≤ 7 días)
+              </div>
+              <span style={{ fontWeight:700, color: alertasAdvertencia > 0 ? "#f59e0b" : "#9ca3af" }}>{alertasAdvertencia}</span>
+            </div>
+            {totalAlertas === 0 && (
+              <p style={{ fontSize:"0.8rem", color:"#9ca3af", margin:0 }}>Todo en orden</p>
+            )}
+            <Link href="/alertas" style={{ marginTop:"0.25rem", fontSize:"0.78rem", color:"#6c63ff", fontWeight:600, textDecoration:"none", display:"inline-flex", alignItems:"center", gap:"0.25rem" }}>
+              Ver todas las alertas <ChevronRight size={12} />
+            </Link>
+          </div>
         </div>
 
       </div>

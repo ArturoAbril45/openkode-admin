@@ -4,8 +4,9 @@ import { useState, useEffect, useRef } from "react";
 import {
   User, CreditCard, Mail, Phone, Globe,
   KeyRound, Eye, EyeOff, Save, MapPin, Search, Trash2, Pencil, X,
-  BarChart2, Package, DollarSign,
+  BarChart2, Package, DollarSign, MessageSquare,
 } from "lucide-react";
+import Link from "next/link";
 import CustomSelect      from "../../components/CustomSelect";
 import ConfirmModal      from "../../components/ConfirmModal";
 import PasswordStrength  from "../../components/PasswordStrength";
@@ -198,9 +199,16 @@ export default function ClientesPage() {
                 <BarChart2 size={16} color="#6c63ff" strokeWidth={2} />
                 <span style={{ fontWeight:700, fontSize:"0.95rem", color:"#0f0f1a" }}>{t.clientesResumenTitle}</span>
               </div>
-              <button onClick={() => setResumenCliente(null)} style={{ background:"#f3f4f6", border:"none", borderRadius:"6px", padding:"0.3rem 0.5rem", cursor:"pointer", color:"#6b7280" }}>
-                <X size={15} />
-              </button>
+              <div style={{ display:"flex", gap:"0.4rem" }}>
+                <Link href={`/mensajes?clienteId=${String(resumenCliente.id ?? "")}`}
+                  onClick={() => setResumenCliente(null)}
+                  style={{ display:"inline-flex", alignItems:"center", gap:"0.3rem", background:"#ede9fe", color:"#6c63ff", border:"none", borderRadius:"6px", padding:"0.3rem 0.6rem", fontSize:"0.78rem", fontWeight:600, textDecoration:"none" }}>
+                  <MessageSquare size={13} /> Chat
+                </Link>
+                <button onClick={() => setResumenCliente(null)} style={{ background:"#f3f4f6", border:"none", borderRadius:"6px", padding:"0.3rem 0.5rem", cursor:"pointer", color:"#6b7280" }}>
+                  <X size={15} />
+                </button>
+              </div>
             </div>
             <div style={{ padding:"1rem 1.25rem" }}>
               <p style={{ margin:"0 0 0.25rem", fontWeight:700, fontSize:"1rem", color:"#0f0f1a" }}>{String(resumenCliente.nombre ?? "")}</p>

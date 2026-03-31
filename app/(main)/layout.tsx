@@ -19,7 +19,7 @@ import { signOut }    from "firebase/auth";
 import {
   getNotificaciones, addNotificacion,
   marcarTodasLeidas, limpiarNotificaciones,
-  getConfiguracion,
+  getConfiguracion, getClientes, getPedidos,
 } from "../lib/services";
 import { LangProvider, useLang } from "../lib/LangContext";
 
@@ -62,6 +62,14 @@ function LayoutContent({ children }: { children: React.ReactNode }) {
   const [loggingOut,   setLoggingOut]   = useState(false);
   const prevPath = useRef<string | null>(null);
 
+  // Búsqueda global
+  const [searchQuery,   setSearchQuery]   = useState("");
+  const [searchResults, setSearchResults] = useState<{ tipo: "cliente"|"pedido"; label: string; sub: string; href: string }[]>([]);
+  const [searchOpen,    setSearchOpen]    = useState(false);
+  const [allClientes,   setAllClientes]   = useState<Record<string,unknown>[]>([]);
+  const [allPedidos,    setAllPedidos]    = useState<Record<string,unknown>[]>([]);
+  const searchRef = useRef<HTMLDivElement>(null);
+
   useEffect(() => {
     if (!sessionStorage.getItem("auth") && !localStorage.getItem("auth")) {
       router.replace("/login");
@@ -70,6 +78,10 @@ function LayoutContent({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     getNotificaciones().then(data => setNotifs(data as Notif[]));
+    Promise.all([getClientes(), getPedidos()]).then(([clts, peds]) => {
+      setAllClientes(clts);
+      setAllPedidos(peds);
+    });
   }, []);
 
   function cargarPerfil() {
@@ -94,6 +106,22 @@ function LayoutContent({ children }: { children: React.ReactNode }) {
     addNotificacion({ mensaje: `Admin accedió a ${label}`, seccion: pathname })
       .then(() => getNotificaciones().then(data => setNotifs(data as Notif[])));
   }, [pathname]);
+
+  function handleSearch(q: string) {
+    setSearchQuery(q);
+    if (!q.trim()) { setSearchResults([]); setSearchOpen(false); return; }
+    const ql = q.toLowerCase();
+    const clts = allClientes
+      .filter(c => String(c.nombre ?? "").toLowerCase().includes(ql) || String(c.correo ?? "").toLowerCase().includes(ql))
+      .slice(0, 4)
+      .map(c => ({ tipo: "cliente" as const, label: String(c.nombre ?? ""), sub: String(c.correo ?? ""), href: "/clientes" }));
+    const peds = allPedidos
+      .filter(p => String(p.proyecto ?? "").toLowerCase().includes(ql) || String(p.cliente ?? "").toLowerCase().includes(ql))
+      .slice(0, 4)
+      .map(p => ({ tipo: "pedido" as const, label: String(p.proyecto ?? ""), sub: String(p.cliente ?? ""), href: "/pedidos" }));
+    setSearchResults([...clts, ...peds]);
+    setSearchOpen(true);
+  }
 
   function tiempoRelativo(ts: unknown): string {
     if (!ts) return "";
@@ -238,9 +266,48 @@ function LayoutContent({ children }: { children: React.ReactNode }) {
 
         {/* Topbar */}
         <header className="topbar">
-          <div className="topbar-search">
+          <div className="topbar-search" ref={searchRef} style={{ position: "relative" }}>
             <Search size={15} className="topbar-search-icon" strokeWidth={1.8} />
-            <input type="text" placeholder={t.searchPH} className="topbar-search-input" />
+            <input
+              type="text"
+              placeholder={t.searchPH}
+              className="topbar-search-input"
+              value={searchQuery}
+              onChange={e => handleSearch(e.target.value)}
+              onFocus={() => searchQuery && setSearchOpen(true)}
+              onBlur={() => setTimeout(() => setSearchOpen(false), 150)}
+            />
+            {searchOpen && (
+              <div style={{ position:"absolute", top:"calc(100% + 6px)", left:0, right:0, background:"#fff", border:"1.5px solid #e5e7eb", borderRadius:"12px", boxShadow:"0 8px 30px rgba(0,0,0,0.12)", zIndex:9999, overflow:"hidden" }}>
+                {searchResults.length === 0 ? (
+                  <p style={{ padding:"0.75rem 1rem", fontSize:"0.82rem", color:"#9ca3af", margin:0 }}>{t.searchNoResults}</p>
+                ) : (
+                  <>
+                    {["cliente","pedido"].map(tipo => {
+                      const items = searchResults.filter(r => r.tipo === tipo);
+                      if (!items.length) return null;
+                      return (
+                        <div key={tipo}>
+                          <p style={{ margin:0, padding:"0.4rem 1rem 0.2rem", fontSize:"0.68rem", fontWeight:700, color:"#9ca3af", textTransform:"uppercase", letterSpacing:"0.05em" }}>
+                            {tipo === "cliente" ? t.searchResultsClientes : t.searchResultsPedidos}
+                          </p>
+                          {items.map((r, i) => (
+                            <Link key={i} href={r.href} onClick={() => { setSearchOpen(false); setSearchQuery(""); setSearchResults([]); }}
+                              style={{ display:"flex", flexDirection:"column", padding:"0.45rem 1rem", textDecoration:"none", borderTop: i === 0 ? "none" : "1px solid #f8fafc" }}
+                              onMouseEnter={e => (e.currentTarget.style.background = "#f9fafb")}
+                              onMouseLeave={e => (e.currentTarget.style.background = "transparent")}
+                            >
+                              <span style={{ fontSize:"0.83rem", fontWeight:600, color:"#0f0f1a" }}>{r.label}</span>
+                              <span style={{ fontSize:"0.73rem", color:"#9ca3af" }}>{r.sub}</span>
+                            </Link>
+                          ))}
+                        </div>
+                      );
+                    })}
+                  </>
+                )}
+              </div>
+            )}
           </div>
           <div className="topbar-actions">
             <button

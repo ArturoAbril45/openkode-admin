@@ -38,6 +38,13 @@ export async function updatePedido(id: string, data: Record<string, unknown>) {
   return updateDoc(doc(db, "pedidos", id), data);
 }
 
+export async function pushHistorialPedido(id: string, entrada: { estado: string; fecha: string; nota?: string }) {
+  const snap = await getDoc(doc(db, "pedidos", id));
+  if (!snap.exists()) return;
+  const actual = (snap.data().historial as typeof entrada[]) ?? [];
+  return updateDoc(doc(db, "pedidos", id), { historial: [...actual, entrada] });
+}
+
 export async function deletePedido(id: string) {
   return deleteDoc(doc(db, "pedidos", id));
 }
