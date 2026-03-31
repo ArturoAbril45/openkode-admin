@@ -28,6 +28,7 @@ export default function PagosPage() {
   const [pedidos,      setPedidos]      = useState<Record<string, unknown>[]>([]);
   const [loadingData,  setLoadingData]  = useState(true);
   const [search,       setSearch]       = useState("");
+  const [filtroEstado, setFiltroEstado] = useState<"todos"|"saldado"|"deuda"|"sin-info">("todos");
   const [page,         setPage]         = useState(1);
   const [modalList,    setModalList]    = useState<string[]>([]);
   const [modalIdx,     setModalIdx]     = useState(0);
@@ -40,10 +41,13 @@ export default function PagosPage() {
     });
   }, []);
 
-  const filtered = pedidos.filter(p =>
-    String(p.proyecto ?? "").toLowerCase().includes(search.toLowerCase()) ||
-    String(p.cliente  ?? "").toLowerCase().includes(search.toLowerCase())
-  );
+  const filtered = pedidos.filter(p => {
+    const texto = String(p.proyecto ?? "").toLowerCase().includes(search.toLowerCase()) ||
+                  String(p.cliente  ?? "").toLowerCase().includes(search.toLowerCase());
+    if (!texto) return false;
+    if (filtroEstado === "todos") return true;
+    return estadoPago(p) === filtroEstado;
+  });
   const paginated = filtered.slice((page - 1) * PER_PAGE, page * PER_PAGE);
 
   const conPago        = pedidos.filter(p => p.montoTotal && String(p.montoTotal) !== "");
@@ -150,22 +154,39 @@ export default function PagosPage() {
         </div>
       )}
 
-      <div className="panel-header" style={{ marginTop: "0.5rem" }}>
-        <div>
-          <p className="panel-subtitle">
-            {loadingData
-              ? t.pagosCargando
-              : `${filtered.length} ${filtered.length !== 1 ? t.pagosPlural : t.pagosSingular}`}
-          </p>
+      <div className="panel-header" style={{ marginTop: "0.5rem", flexWrap: "wrap", gap: "0.75rem" }}>
+        <div style={{ display: "flex", gap: "0.4rem", flexWrap: "wrap" }}>
+          {(["todos","saldado","deuda","sin-info"] as const).map(f => {
+            const labels: Record<string, string> = {
+              todos: t.pagosFiltraTodos, saldado: t.pagosFiltroSaldado,
+              deuda: t.pagosFiltroDeuda, "sin-info": t.pagosFiltroSinInfo,
+            };
+            const active = filtroEstado === f;
+            return (
+              <button key={f} onClick={() => { setFiltroEstado(f); setPage(1); }}
+                style={{ padding: "0.25rem 0.75rem", borderRadius: "20px", fontSize: "0.78rem", fontWeight: 600, border: "1.5px solid", cursor: "pointer", transition: "all 0.15s",
+                  background: active ? "#6c63ff" : "transparent",
+                  color: active ? "#fff" : "#6b7280",
+                  borderColor: active ? "#6c63ff" : "#e5e7eb",
+                }}>
+                {labels[f]}
+              </button>
+            );
+          })}
         </div>
-        <div className="table-search-wrap">
-          <Search size={14} className="table-search-icon" strokeWidth={1.8} />
-          <input
-            className="table-search-input"
-            placeholder={t.pagosBuscar}
-            value={search}
-            onChange={e => { setSearch(e.target.value); setPage(1); }}
-          />
+        <div style={{ display: "flex", alignItems: "center", gap: "0.75rem", marginLeft: "auto" }}>
+          <p className="panel-subtitle" style={{ margin: 0 }}>
+            {loadingData ? t.pagosCargando : `${filtered.length} ${filtered.length !== 1 ? t.pagosPlural : t.pagosSingular}`}
+          </p>
+          <div className="table-search-wrap">
+            <Search size={14} className="table-search-icon" strokeWidth={1.8} />
+            <input
+              className="table-search-input"
+              placeholder={t.pagosBuscar}
+              value={search}
+              onChange={e => { setSearch(e.target.value); setPage(1); }}
+            />
+          </div>
         </div>
       </div>
 

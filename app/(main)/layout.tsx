@@ -140,14 +140,12 @@ function LayoutContent({ children }: { children: React.ReactNode }) {
     { href: "/proyectos",             icon: FolderCheck,     label: t.navProyectos    },
     { href: "/proyectos-cancelados",  icon: FolderX,         label: t.navCancelados   },
     { href: "/fecha-entrega",         icon: CalendarClock,   label: t.navFechaEntrega },
-    { href: "/fecha-inicio",          icon: CalendarCheck,   label: t.navFechaInicio  },
   ];
 
   const NAV_SYSTEM = [
-    { href: "/alertas",         icon: Bell,          label: t.navAlertas      },
     { href: "/pagos",           icon: CreditCard,    label: t.navPagos        },
+    { href: "/alertas",         icon: Bell,          label: t.navAlertas      },
     { href: "/configuracion",   icon: Settings,      label: t.navConfiguracion},
-    { href: "/reporte-tecnico", icon: FileBarChart2, label: t.navReporte      },
   ];
 
   const c = collapsed;

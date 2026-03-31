@@ -4,13 +4,14 @@ import { useState, useEffect, useRef } from "react";
 import {
   User, CreditCard, Mail, Phone, Globe,
   KeyRound, Eye, EyeOff, Save, MapPin, Search, Trash2, Pencil, X,
+  BarChart2, Package, DollarSign,
 } from "lucide-react";
 import CustomSelect      from "../../components/CustomSelect";
 import ConfirmModal      from "../../components/ConfirmModal";
 import PasswordStrength  from "../../components/PasswordStrength";
 import Pagination        from "../../components/Pagination";
 import { showToast }     from "../../components/Toast";
-import { getClientes, addCliente, updateCliente, deleteCliente } from "../../lib/services";
+import { getClientes, addCliente, updateCliente, deleteCliente, getPedidos } from "../../lib/services";
 import { useLang } from "../../lib/LangContext";
 
 const PAISES = [
@@ -69,12 +70,26 @@ export default function ClientesPage() {
   const [deletingId,  setDeletingId]  = useState<string | null>(null);
   const [confirmDel,  setConfirmDel]  = useState(false);
   const [editId,      setEditId]      = useState<string | null>(null);
+  const [resumenCliente, setResumenCliente] = useState<Record<string,unknown> | null>(null);
+  const [pedidosCliente, setPedidosCliente] = useState<Record<string,unknown>[]>([]);
   const formRef = useRef<HTMLDivElement>(null);
   const [form, setForm] = useState(EMPTY_FORM);
 
+  const [todosPedidos, setTodosPedidos] = useState<Record<string,unknown>[]>([]);
+
   useEffect(() => {
-    getClientes().then(data => { setClientes(data); setLoadingData(false); });
+    Promise.all([getClientes(), getPedidos()]).then(([clts, peds]) => {
+      setClientes(clts);
+      setTodosPedidos(peds);
+      setLoadingData(false);
+    });
   }, []);
+
+  function abrirResumen(c: Record<string,unknown>) {
+    const peds = todosPedidos.filter(p => p.clienteId === c.id || p.cliente === c.nombre);
+    setPedidosCliente(peds);
+    setResumenCliente(c);
+  }
 
   function handle(e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) {
     const { name, value } = e.target;
@@ -173,6 +188,66 @@ export default function ClientesPage() {
 
   return (
     <>
+      {resumenCliente && (
+        <div style={{ position:"fixed", inset:0, background:"rgba(0,0,0,0.5)", zIndex:9999, display:"flex", alignItems:"center", justifyContent:"center", padding:"1rem" }}
+          onClick={() => setResumenCliente(null)}>
+          <div style={{ background:"#fff", borderRadius:"16px", width:"100%", maxWidth:"520px", maxHeight:"85vh", overflow:"auto", boxShadow:"0 20px 60px rgba(0,0,0,0.3)" }}
+            onClick={e => e.stopPropagation()}>
+            <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", padding:"1rem 1.25rem", borderBottom:"1px solid #f0f0f0" }}>
+              <div style={{ display:"flex", alignItems:"center", gap:"0.5rem" }}>
+                <BarChart2 size={16} color="#6c63ff" strokeWidth={2} />
+                <span style={{ fontWeight:700, fontSize:"0.95rem", color:"#0f0f1a" }}>{t.clientesResumenTitle}</span>
+              </div>
+              <button onClick={() => setResumenCliente(null)} style={{ background:"#f3f4f6", border:"none", borderRadius:"6px", padding:"0.3rem 0.5rem", cursor:"pointer", color:"#6b7280" }}>
+                <X size={15} />
+              </button>
+            </div>
+            <div style={{ padding:"1rem 1.25rem" }}>
+              <p style={{ margin:"0 0 0.25rem", fontWeight:700, fontSize:"1rem", color:"#0f0f1a" }}>{String(resumenCliente.nombre ?? "")}</p>
+              <p style={{ margin:"0 0 1rem", fontSize:"0.82rem", color:"#6b7280" }}>{String(resumenCliente.correo ?? "")} · {String(resumenCliente.pais ?? "")}</p>
+              <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr 1fr", gap:"0.75rem", marginBottom:"1.25rem" }}>
+                {[
+                  { label: t.navPedidos, value: String(pedidosCliente.length), color:"#6c63ff", bg:"#ede9fe", icon: Package },
+                  { label: t.pagosResumenPagado, value: `$${pedidosCliente.reduce((s,p) => s+(parseFloat(String(p.montoPagado??0))||0),0).toFixed(0)}`, color:"#059669", bg:"#d1fae5", icon: DollarSign },
+                  { label: t.pagosResumenPendiente, value: `$${pedidosCliente.reduce((s,p) => s+Math.max(0,(parseFloat(String(p.montoTotal??0))||0)-(parseFloat(String(p.montoPagado??0))||0)),0).toFixed(0)}`, color:"#dc2626", bg:"#fee2e2", icon: DollarSign },
+                ].map(({ label, value, color, bg, icon: Icon }) => (
+                  <div key={label} style={{ background:bg, borderRadius:"10px", padding:"0.6rem 0.75rem", display:"flex", flexDirection:"column", gap:"0.2rem" }}>
+                    <Icon size={14} color={color} />
+                    <p style={{ margin:0, fontSize:"1rem", fontWeight:700, color }}>{value}</p>
+                    <p style={{ margin:0, fontSize:"0.7rem", color:"#6b7280" }}>{label}</p>
+                  </div>
+                ))}
+              </div>
+              {pedidosCliente.length === 0 ? (
+                <p style={{ color:"#9ca3af", fontSize:"0.85rem", textAlign:"center", padding:"1rem 0" }}>{t.clientesResumenNoPedidos}</p>
+              ) : pedidosCliente.map(p => {
+                const total  = parseFloat(String(p.montoTotal??0))||0;
+                const pagado = parseFloat(String(p.montoPagado??0))||0;
+                const pend   = Math.max(0,total-pagado);
+                return (
+                  <div key={String(p.id)} style={{ borderRadius:"10px", border:"1px solid #f0f0f0", padding:"0.75rem 1rem", marginBottom:"0.5rem" }}>
+                    <div style={{ display:"flex", justifyContent:"space-between", alignItems:"flex-start", gap:"0.5rem" }}>
+                      <p style={{ margin:0, fontWeight:700, fontSize:"0.85rem", color:"#0f0f1a" }}>{String(p.proyecto??"—")}</p>
+                      <span style={{ fontSize:"0.7rem", fontWeight:600, padding:"0.1rem 0.5rem", borderRadius:"20px",
+                        background: p.estado==="entregado" ? "#d1fae5" : p.estado==="cancelado" ? "#fee2e2" : "#ede9fe",
+                        color: p.estado==="entregado" ? "#059669" : p.estado==="cancelado" ? "#dc2626" : "#6c63ff",
+                      }}>{String(p.estado??"")}</span>
+                    </div>
+                    {total > 0 && (
+                      <div style={{ display:"flex", gap:"1rem", marginTop:"0.4rem", fontSize:"0.75rem", color:"#6b7280" }}>
+                        <span>Total: <strong style={{ color:"#0f0f1a" }}>${total.toFixed(0)}</strong></span>
+                        <span>Pagado: <strong style={{ color:"#059669" }}>${pagado.toFixed(0)}</strong></span>
+                        {pend > 0 && <span>Pendiente: <strong style={{ color:"#dc2626" }}>${pend.toFixed(0)}</strong></span>}
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        </div>
+      )}
+
       <div className="panel-header">
         <div>
           <h2 className="panel-title">{t.clientesTitle}</h2>
@@ -386,6 +461,9 @@ export default function ClientesPage() {
                 <td>{String(c.proyecto ?? "")}</td>
                 <td>
                   <div style={{ display:"flex", gap:"0.4rem" }}>
+                    <button className="table-edit-btn" onClick={() => abrirResumen(c)} title={t.clientesResumen} style={{ color:"#6c63ff" }}>
+                      <BarChart2 size={13} strokeWidth={2} />
+                    </button>
                     <button className="table-edit-btn" onClick={() => editarCliente(c)} title={t.pedidosSubtitleEditar}>
                       <Pencil size={13} strokeWidth={2} />
                     </button>

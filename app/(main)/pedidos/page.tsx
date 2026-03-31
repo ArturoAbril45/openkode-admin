@@ -688,12 +688,13 @@ export default function PedidosPage() {
       <div className="reporte-card">
         <table className="reporte-table fixed-layout" style={{ tableLayout: "fixed" }}>
           <colgroup>
-            <col style={{ width: "20%" }} />
-            <col style={{ width: "14%" }} />
-            <col style={{ width: "13%" }} />
-            <col style={{ width: "11%" }} />
-            <col style={{ width: "14%" }} />
+            <col style={{ width: "18%" }} />
+            <col style={{ width: "12%" }} />
+            <col style={{ width: "12%" }} />
             <col style={{ width: "10%" }} />
+            <col style={{ width: "12%" }} />
+            <col style={{ width: "9%" }} />
+            <col style={{ width: "9%" }} />
             <col style={{ width: "10%" }} />
             <col style={{ width: "8%" }} />
           </colgroup>
@@ -706,18 +707,19 @@ export default function PedidosPage() {
               <th>{t.dashEstado}</th>
               <th>{t.clientesInicio}</th>
               <th>{t.pedidosEntrega}</th>
+              <th>{t.pedidosEstadoPago}</th>
               <th></th>
             </tr>
           </thead>
           <tbody>
             {loadingData ? (
               <tr>
-                <td colSpan={8} style={{ textAlign: "center", padding: "2rem" }}>
+                <td colSpan={9} style={{ textAlign: "center", padding: "2rem" }}>
                   <Loader2 size={20} className="panel-loading-spin" style={{ margin: "0 auto" }} />
                 </td>
               </tr>
             ) : paginated.length === 0 ? (
-              <tr><td colSpan={8} style={{ textAlign: "center", color: "#9ca3af", padding: "1.5rem" }}>{t.pedidosSinResultados}</td></tr>
+              <tr><td colSpan={9} style={{ textAlign: "center", color: "#9ca3af", padding: "1.5rem" }}>{t.pedidosSinResultados}</td></tr>
             ) : paginated.map(p => (
               <tr key={String(p.id)} className={editId === String(p.id) ? "tr-editing" : ""}>
                 <td style={{ overflow: "hidden", maxWidth: 0 }}>
@@ -742,6 +744,18 @@ export default function PedidosPage() {
                 </td>
                 <td className="reporte-td-gray">{p.fecha        ? formatFecha(String(p.fecha), locale)        : "—"}</td>
                 <td className="reporte-td-gray">{p.fechaEntrega  ? formatFecha(String(p.fechaEntrega), locale) : "—"}</td>
+                <td style={{ overflow: "visible", whiteSpace: "normal" }}>
+                  {(() => {
+                    const total  = parseFloat(String(p.montoTotal  ?? "")) || 0;
+                    const pagado = parseFloat(String(p.montoPagado ?? "")) || 0;
+                    if (!total && !pagado) return <span style={{ color: "#9ca3af", fontSize: "0.75rem" }}>—</span>;
+                    if (pagado >= total && total > 0)
+                      return <span className="pedido-tipo-badge estado-entregado" style={{ padding: "0.15rem 0.5rem", fontSize: "0.7rem" }}>{t.pedidosPagado}</span>;
+                    if (pagado > 0)
+                      return <span className="pedido-tipo-badge prio-media" style={{ padding: "0.15rem 0.5rem", fontSize: "0.7rem" }}>{t.pedidosParcial}</span>;
+                    return <span className="pedido-tipo-badge estado-pendiente" style={{ padding: "0.15rem 0.5rem", fontSize: "0.7rem" }}>{t.pedidosSinPago}</span>;
+                  })()}
+                </td>
                 <td style={{ overflow: "visible", whiteSpace: "normal" }}>
                   <div style={{ display:"flex", gap:"0.4rem" }}>
                     <button

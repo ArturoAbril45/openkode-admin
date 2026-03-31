@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import {
   Bell, Package, CalendarX, Clock, AlertTriangle,
-  CheckCircle2, FolderX, Zap, ChevronDown, ChevronUp, Loader2,
+  CheckCircle2, FolderX, Zap, ChevronDown, ChevronUp, Loader2, CreditCard,
 } from "lucide-react";
 import { getPedidos, getProyectosCancelados } from "../../lib/services";
 import { useLang } from "../../lib/LangContext";
@@ -67,6 +67,11 @@ export default function AlertasPage() {
 
   const urgentes  = activos.filter(p => p.prioridad === "urgente");
   const pendientes = pedidos.filter(p => p.estado === "pendiente");
+  const pagosPendientes = pedidos.filter(p => {
+    const total  = parseFloat(String(p.montoTotal  ?? "")) || 0;
+    const pagado = parseFloat(String(p.montoPagado ?? "")) || 0;
+    return total > 0 && pagado < total && p.estado !== "cancelado";
+  });
 
   const grupos: AlertGroup[] = [
     {
@@ -126,6 +131,22 @@ export default function AlertasPage() {
         titulo:  String(p.proyecto ?? "—"),
         detalle: `${String(p.cliente ?? "—")} · ${t.alertasPrioridadLabel}: ${String(p.prioridad ?? "—")}`,
       })),
+    },
+    {
+      key:   "pagosPendientes",
+      icon:  <CreditCard size={17} strokeWidth={2} />,
+      label: t.alertasPagosPendientes,
+      nivel: pagosPendientes.length > 0 ? "advertencia" : "ok",
+      items: pagosPendientes.map(p => {
+        const total   = parseFloat(String(p.montoTotal  ?? "")) || 0;
+        const pagado  = parseFloat(String(p.montoPagado ?? "")) || 0;
+        const pend    = Math.max(0, total - pagado);
+        return {
+          id:      p.id as string,
+          titulo:  String(p.proyecto ?? "—"),
+          detalle: `${String(p.cliente ?? "—")} · Pendiente: $${pend.toFixed(2)}`,
+        };
+      }),
     },
     {
       key:   "cancelados",

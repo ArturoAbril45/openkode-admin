@@ -48,11 +48,22 @@ export default function DashboardPage() {
 
   const enDesarrollo = pedidos.filter(p => p.estado === "desarrollo").length;
 
+  const totalIngresado  = pedidos.reduce((s, p) => s + (parseFloat(String(p.montoPagado ?? 0)) || 0), 0);
+  const totalPendiente  = pedidos.reduce((s, p) => {
+    const total  = parseFloat(String(p.montoTotal  ?? 0)) || 0;
+    const pagado = parseFloat(String(p.montoPagado ?? 0)) || 0;
+    return s + Math.max(0, total - pagado);
+  }, 0);
+
+  function fmtUsd(n: number) {
+    return `$${n.toLocaleString("es", { minimumFractionDigits: 0, maximumFractionDigits: 0 })}`;
+  }
+
   const CARDS = [
-    { label: t.navClientes,      value: String(clientes.length),   icon: Users,        color: "#6c63ff", bg: "#f0effe" },
-    { label: t.navPedidos,       value: String(pedidos.length),    icon: Package,      color: "#3ecf8e", bg: "#edfaf4" },
-    { label: t.dashEnDesarrollo, value: String(enDesarrollo),      icon: MessageSquare,color: "#f59e0b", bg: "#fef9ec" },
-    { label: t.dashCancelados,   value: String(cancelados.length), icon: FolderX,      color: "#ef4444", bg: "#fef2f2" },
+    { label: t.navClientes,         value: String(clientes.length),   icon: Users,        color: "#6c63ff", bg: "#f0effe" },
+    { label: t.navPedidos,          value: String(pedidos.length),    icon: Package,      color: "#3ecf8e", bg: "#edfaf4" },
+    { label: t.dashIngresos,        value: fmtUsd(totalIngresado),    icon: MessageSquare,color: "#059669", bg: "#d1fae5" },
+    { label: t.dashPagosPendientes, value: fmtUsd(totalPendiente),    icon: FolderX,      color: "#ef4444", bg: "#fef2f2" },
   ];
 
   const DONUT_SLICES = [
