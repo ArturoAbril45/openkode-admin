@@ -171,14 +171,13 @@ export default function PagosPage() {
                         href={String(p.comprobante)}
                         target="_blank"
                         rel="noreferrer"
-                        className="table-edit-btn"
                         title={t.pagosVerComprobante}
-                        style={{ display: "inline-flex", alignItems: "center", gap: "0.3rem", textDecoration: "none", fontSize: "0.78rem" }}
+                        style={{ display: "inline-flex", alignItems: "center", gap: "0.3rem", textDecoration: "none", fontSize: "0.78rem", color: "#6c63ff", background: "#ede9fe", padding: "0.2rem 0.6rem", borderRadius: "6px", fontWeight: 500 }}
                       >
-                        <ExternalLink size={13} strokeWidth={2} /> {t.pagosVerComprobante}
+                        <ExternalLink size={12} strokeWidth={2} /> {t.pagosVerComprobante}
                       </a>
                     ) : (
-                      <span style={{ color: "#9ca3af", fontSize: "0.82rem" }}>{t.pagosSinComprobante}</span>
+                      <span style={{ color: "#9ca3af", fontSize: "0.82rem" }}>—</span>
                     )}
                   </td>
                 </tr>
