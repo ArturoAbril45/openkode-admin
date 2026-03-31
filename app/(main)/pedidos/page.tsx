@@ -548,6 +548,26 @@ export default function PedidosPage() {
 
             {form.tipoPago && (
               <div className="form-field">
+                <label className="form-label">
+                  {form.tipoPago === "mensual" ? t.clientesValorMensual : t.clientesValorTotal}
+                </label>
+                <div className="form-icon-wrap">
+                  <DollarSign size={14} className="form-icon" strokeWidth={1.8} />
+                  <input
+                    type="number"
+                    min="0"
+                    step="0.01"
+                    className="form-input has-icon"
+                    placeholder={form.tipoPago === "mensual" ? t.clientesEjValorMensual : t.clientesEjValorTotal}
+                    value={form.montoTotal}
+                    onChange={e => setForm(f => ({ ...f, montoTotal: e.target.value }))}
+                  />
+                </div>
+              </div>
+            )}
+
+            {form.tipoPago && (
+              <div className="form-field">
                 <label className="form-label">{t.pedidosMontoPagado}</label>
                 <div className="form-icon-wrap">
                   <DollarSign size={14} className="form-icon" strokeWidth={1.8} />
@@ -564,6 +584,28 @@ export default function PedidosPage() {
               </div>
             )}
 
+            {form.tipoPago && (
+              <div className="form-field">
+                <label className="form-label" style={{ color: (parseFloat(form.montoTotal)||0) - (parseFloat(form.montoPagado)||0) > 0 ? "#dc2626" : "#059669" }}>
+                  {t.pedidosMontoPendiente}
+                </label>
+                <div className="form-icon-wrap">
+                  <DollarSign size={14} className="form-icon" strokeWidth={1.8} />
+                  <input
+                    type="text"
+                    readOnly
+                    className="form-input has-icon"
+                    style={{
+                      cursor: "default",
+                      fontWeight: 600,
+                      background: (parseFloat(form.montoTotal)||0) - (parseFloat(form.montoPagado)||0) > 0 ? "#fef2f2" : "#f0fdf4",
+                      color:      (parseFloat(form.montoTotal)||0) - (parseFloat(form.montoPagado)||0) > 0 ? "#dc2626" : "#059669",
+                    }}
+                    value={`$${Math.max(0, (parseFloat(form.montoTotal)||0) - (parseFloat(form.montoPagado)||0)).toFixed(2)}`}
+                  />
+                </div>
+              </div>
+            )}
 
           </div>
 
