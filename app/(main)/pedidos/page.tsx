@@ -5,7 +5,7 @@ import {
   User, Globe, Monitor, Smartphone, MessageSquare, Save,
   Layers, Zap, Activity, Code2, Search, CalendarCheck, CalendarClock,
   FolderOpen, Loader2, Pencil, X, Trash2,
-  DollarSign, Upload, FileCheck, ExternalLink,
+  DollarSign, Upload, FileCheck, ExternalLink, FileText, Wallet,
 } from "lucide-react";
 import CustomSelect  from "../../components/CustomSelect";
 import DatePicker    from "../../components/DatePicker";
@@ -56,6 +56,9 @@ const EMPTY_FORM = {
   fecha:             "",
   fechaEntrega:      "",
   mensaje:           "",
+  contrato:          "",
+  tipoPago:          "",
+  valorPago:         "",
   montoTotal:        "",
   montoPagado:       "",
   comprobante:       "",
@@ -256,6 +259,9 @@ export default function PedidosPage() {
       fecha:             String(p.fecha              ?? ""),
       fechaEntrega:      String(p.fechaEntrega       ?? ""),
       mensaje:           String(p.mensaje            ?? ""),
+      contrato:          String(p.contrato           ?? ""),
+      tipoPago:          String(p.tipoPago           ?? ""),
+      valorPago:         String(p.valorPago          ?? ""),
       montoTotal:        String(p.montoTotal         ?? ""),
       montoPagado:       String(p.montoPagado        ?? ""),
       comprobante:       String(p.comprobante        ?? ""),
@@ -487,6 +493,54 @@ export default function PedidosPage() {
 
           <p className="form-section-label" style={{ marginTop: "1.75rem" }}>{t.pedidosPagoInfo}</p>
           <div className="form-grid">
+
+            <div className="form-field">
+              <label className="form-label">{t.clientesDuracion}</label>
+              <CustomSelect
+                icon={<FileText size={14} className="form-icon" strokeWidth={1.8} />}
+                value={form.contrato}
+                placeholder={t.clientesSelDuracion}
+                options={Array.from({ length: 24 }, (_, i) => i + 1).map(m => ({
+                  value: String(m),
+                  label: m === 1 ? `1 ${t.clientesMes}` : `${m} ${t.clientesMeses}`,
+                }))}
+                onChange={v => setForm(f => ({ ...f, contrato: v }))}
+              />
+            </div>
+
+            <div className="form-field">
+              <label className="form-label">{t.clientesTipoPago}</label>
+              <CustomSelect
+                icon={<Wallet size={14} className="form-icon" strokeWidth={1.8} />}
+                value={form.tipoPago}
+                placeholder={t.clientesSelTipoPago}
+                options={[
+                  { value: "mensual", label: t.clientesPagoMensual },
+                  { value: "unico",   label: t.clientesPagoUnico   },
+                ]}
+                onChange={v => setForm(f => ({ ...f, tipoPago: v }))}
+              />
+            </div>
+
+            {form.tipoPago && (
+              <div className="form-field">
+                <label className="form-label">
+                  {form.tipoPago === "mensual" ? t.clientesValorMensual : t.clientesValorTotal}
+                </label>
+                <div className="form-icon-wrap">
+                  <DollarSign size={14} className="form-icon" strokeWidth={1.8} />
+                  <input
+                    type="number"
+                    min="0"
+                    step="0.01"
+                    className="form-input has-icon"
+                    placeholder={form.tipoPago === "mensual" ? t.clientesEjValorMensual : t.clientesEjValorTotal}
+                    value={form.valorPago}
+                    onChange={e => setForm(f => ({ ...f, valorPago: e.target.value }))}
+                  />
+                </div>
+              </div>
+            )}
 
             <div className="form-field">
               <label className="form-label">{t.pedidosMontoTotal}</label>

@@ -3,18 +3,15 @@
 import { useState, useEffect, useRef } from "react";
 import {
   User, CreditCard, Mail, Phone, Globe,
-  CalendarClock, CalendarCheck, FileText, KeyRound, Eye, EyeOff, Save, Wallet, DollarSign, MapPin, Search, Trash2, Pencil, X,
+  KeyRound, Eye, EyeOff, Save, MapPin, Search, Trash2, Pencil, X,
 } from "lucide-react";
 import CustomSelect      from "../../components/CustomSelect";
-import DatePicker        from "../../components/DatePicker";
 import ConfirmModal      from "../../components/ConfirmModal";
 import PasswordStrength  from "../../components/PasswordStrength";
 import Pagination        from "../../components/Pagination";
 import { showToast }     from "../../components/Toast";
 import { getClientes, addCliente, updateCliente, deleteCliente } from "../../lib/services";
 import { useLang } from "../../lib/LangContext";
-
-const MESES = Array.from({ length: 24 }, (_, i) => i + 1);
 
 const PAISES = [
   "Afganistán","Albania","Alemania","Andorra","Angola","Argentina","Armenia","Australia",
@@ -42,17 +39,24 @@ const PAISES = [
   "Uzbekistán","Vanuatu","Venezuela","Vietnam","Yemen","Yibuti","Zambia","Zimbabue",
 ];
 
-function formatFecha(iso: string, locale: string) {
-  return new Date(iso + "T00:00:00").toLocaleDateString(locale, { day: "2-digit", month: "short", year: "numeric" });
-}
 
 const PER_PAGE = 5;
 
 import { avatarColor } from "../../lib/avatarColor";
 
+const EMPTY_FORM = {
+  nombre:    "",
+  dni:       "",
+  correo:    "",
+  telefono:  "",
+  pais:      "",
+  proyecto:  "",
+  password:  "",
+  confirmar: "",
+};
+
 export default function ClientesPage() {
-  const { t, lang } = useLang();
-  const locale = lang === "EN" ? "en" : "es";
+  const { t } = useLang();
 
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirm,  setShowConfirm]  = useState(false);
@@ -66,26 +70,11 @@ export default function ClientesPage() {
   const [confirmDel,  setConfirmDel]  = useState(false);
   const [editId,      setEditId]      = useState<string | null>(null);
   const formRef = useRef<HTMLDivElement>(null);
+  const [form, setForm] = useState(EMPTY_FORM);
 
   useEffect(() => {
     getClientes().then(data => { setClientes(data); setLoadingData(false); });
   }, []);
-
-  const [form, setForm] = useState({
-    nombre:        "",
-    dni:           "",
-    correo:        "",
-    telefono:      "",
-    pais:          "",
-    proyecto:      "",
-    fechaInicio:   "",
-    fechaMaxima:   "",
-    contrato:      "",
-    tipoPago:      "",
-    valorPago:     "",
-    password:      "",
-    confirmar:     "",
-  });
 
   function handle(e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) {
     const { name, value } = e.target;
@@ -95,16 +84,12 @@ export default function ClientesPage() {
 
   function validate() {
     const e: Record<string, string> = {};
-    if (!form.nombre)    e.nombre    = t.clientesCampoObligatorio;
-    if (!form.dni)       e.dni       = t.clientesCampoObligatorio;
-    if (!form.correo)    e.correo    = t.clientesCampoObligatorio;
-    if (!form.telefono)  e.telefono  = t.clientesCampoObligatorio;
-    if (!form.pais)      e.pais      = t.clientesSelPaisError;
-    if (!form.proyecto)  e.proyecto  = t.clientesCampoObligatorio;
-    if (!form.fechaInicio) e.fechaInicio = t.clientesSelFechaError;
-    if (!form.fechaMaxima) e.fechaMaxima = t.clientesSelFechaError;
-    if (!form.contrato)  e.contrato  = t.clientesSelDuracionError;
-    if (!form.tipoPago)  e.tipoPago  = t.clientesSelPagoError;
+    if (!form.nombre)      e.nombre      = t.clientesCampoObligatorio;
+    if (!form.dni)         e.dni         = t.clientesCampoObligatorio;
+    if (!form.correo)      e.correo      = t.clientesCampoObligatorio;
+    if (!form.telefono)    e.telefono    = t.clientesCampoObligatorio;
+    if (!form.pais)        e.pais        = t.clientesSelPaisError;
+    if (!form.proyecto)    e.proyecto    = t.clientesCampoObligatorio;
     if (!editId && !form.password) e.password = t.clientesCrearPasswordError;
     if (form.password && form.confirmar !== form.password) e.confirmar = t.clientesPasswordNoCoinciden;
     return e;
@@ -113,19 +98,14 @@ export default function ClientesPage() {
   function editarCliente(c: Record<string, unknown>) {
     setEditId(c.id as string);
     setForm({
-      nombre:      String(c.nombre      ?? ""),
-      dni:         String(c.dni         ?? ""),
-      correo:      String(c.correo      ?? ""),
-      telefono:    String(c.telefono    ?? ""),
-      pais:        String(c.pais        ?? ""),
-      proyecto:    String(c.proyecto    ?? ""),
-      fechaInicio: String(c.fechaInicio ?? ""),
-      fechaMaxima: String(c.fechaMaxima ?? ""),
-      contrato:    String(c.contrato    ?? ""),
-      tipoPago:    String(c.tipoPago    ?? ""),
-      valorPago:   String(c.valorPago   ?? ""),
-      password:    "",
-      confirmar:   "",
+      nombre:    String(c.nombre    ?? ""),
+      dni:       String(c.dni       ?? ""),
+      correo:    String(c.correo    ?? ""),
+      telefono:  String(c.telefono  ?? ""),
+      pais:      String(c.pais      ?? ""),
+      proyecto:  String(c.proyecto  ?? ""),
+      password:  "",
+      confirmar: "",
     });
     setErrors({});
     setTimeout(() => formRef.current?.scrollIntoView({ behavior: "smooth", block: "start" }), 50);
@@ -133,7 +113,7 @@ export default function ClientesPage() {
 
   function cancelarEdicion() {
     setEditId(null);
-    setForm({ nombre:"", dni:"", correo:"", telefono:"", pais:"", proyecto:"", fechaInicio:"", fechaMaxima:"", contrato:"", tipoPago:"", valorPago:"", password:"", confirmar:"" });
+    setForm(EMPTY_FORM);
     setErrors({});
   }
 
@@ -162,7 +142,10 @@ export default function ClientesPage() {
     setConfirm(false);
     try {
       if (editId) {
-        const datos: Record<string, unknown> = { nombre: form.nombre, dni: form.dni, correo: form.correo, telefono: form.telefono, pais: form.pais, proyecto: form.proyecto, fechaInicio: form.fechaInicio, fechaMaxima: form.fechaMaxima, contrato: form.contrato, tipoPago: form.tipoPago, valorPago: form.valorPago };
+        const datos: Record<string, unknown> = {
+          nombre: form.nombre, dni: form.dni, correo: form.correo,
+          telefono: form.telefono, pais: form.pais, proyecto: form.proyecto,
+        };
         if (form.password) datos.password = form.password;
         await updateCliente(editId, datos);
         setEditId(null);
@@ -171,7 +154,7 @@ export default function ClientesPage() {
         await addCliente({ ...form });
         showToast(t.clientesGuardadoOk, "success");
       }
-      setForm({ nombre:"", dni:"", correo:"", telefono:"", pais:"", proyecto:"", fechaInicio:"", fechaMaxima:"", contrato:"", tipoPago:"", valorPago:"", password:"", confirmar:"" });
+      setForm(EMPTY_FORM);
       setErrors({});
       const data = await getClientes();
       setClientes(data);
@@ -181,9 +164,9 @@ export default function ClientesPage() {
   }
 
   const filtered = clientes.filter((c: Record<string, unknown>) =>
-    String(c.nombre ?? "").toLowerCase().includes(search.toLowerCase()) ||
-    String(c.correo ?? "").toLowerCase().includes(search.toLowerCase()) ||
-    String(c.pais   ?? "").toLowerCase().includes(search.toLowerCase()) ||
+    String(c.nombre   ?? "").toLowerCase().includes(search.toLowerCase()) ||
+    String(c.correo   ?? "").toLowerCase().includes(search.toLowerCase()) ||
+    String(c.pais     ?? "").toLowerCase().includes(search.toLowerCase()) ||
     String(c.proyecto ?? "").toLowerCase().includes(search.toLowerCase())
   );
   const paginated = filtered.slice((page - 1) * PER_PAGE, page * PER_PAGE);
@@ -288,80 +271,6 @@ export default function ClientesPage() {
               {errors.proyecto && <p className="form-error-msg">{errors.proyecto}</p>}
             </div>
 
-          </div>
-
-          <p className="form-section-label" style={{ marginTop: "1.75rem" }}>{t.clientesFechasContrato}</p>
-          <div className="form-grid">
-
-            <div className="form-field">
-              <label className="form-label">{t.clientesFechaInicio}</label>
-              <DatePicker
-                icon={<CalendarCheck size={14} className="form-icon" strokeWidth={1.8} />}
-                value={form.fechaInicio}
-                placeholder={t.clientesSelFechaInicio}
-                onChange={v => { setForm(f => ({ ...f, fechaInicio: v })); setErrors(er => { const n={...er}; delete n.fechaInicio; return n; }); }}
-              />
-              {errors.fechaInicio && <p className="form-error-msg">{errors.fechaInicio}</p>}
-            </div>
-
-            <div className="form-field">
-              <label className="form-label">{t.clientesFechaMaxima}</label>
-              <DatePicker
-                icon={<CalendarClock size={14} className="form-icon" strokeWidth={1.8} />}
-                value={form.fechaMaxima}
-                placeholder={t.clientesSelFechaMaxima}
-                onChange={v => { setForm(f => ({ ...f, fechaMaxima: v })); setErrors(er => { const n={...er}; delete n.fechaMaxima; return n; }); }}
-              />
-              {errors.fechaMaxima && <p className="form-error-msg">{errors.fechaMaxima}</p>}
-            </div>
-
-            <div className="form-field">
-              <label className="form-label">{t.clientesDuracion}</label>
-              <CustomSelect
-                icon={<FileText size={14} className="form-icon" strokeWidth={1.8} />}
-                value={form.contrato}
-                placeholder={t.clientesSelDuracion}
-                options={MESES.map(m => ({ value: String(m), label: m === 1 ? `1 ${t.clientesMes}` : `${m} ${t.clientesMeses}` }))}
-                onChange={v => { setForm(f => ({ ...f, contrato: v })); setErrors(er => { const n={...er}; delete n.contrato; return n; }); }}
-              />
-              {errors.contrato && <p className="form-error-msg">{errors.contrato}</p>}
-            </div>
-
-            <div className="form-field">
-              <label className="form-label">{t.clientesTipoPago}</label>
-              <CustomSelect
-                icon={<Wallet size={14} className="form-icon" strokeWidth={1.8} />}
-                value={form.tipoPago}
-                placeholder={t.clientesSelTipoPago}
-                options={[
-                  { value: "mensual", label: t.clientesPagoMensual },
-                  { value: "unico",   label: t.clientesPagoUnico   },
-                ]}
-                onChange={v => { setForm(f => ({ ...f, tipoPago: v })); setErrors(er => { const n={...er}; delete n.tipoPago; return n; }); }}
-              />
-              {errors.tipoPago && <p className="form-error-msg">{errors.tipoPago}</p>}
-            </div>
-
-            {form.tipoPago && (
-              <div className="form-field">
-                <label className="form-label">
-                  {form.tipoPago === "mensual" ? t.clientesValorMensual : t.clientesValorTotal}
-                </label>
-                <div className="form-icon-wrap">
-                  <DollarSign size={14} className="form-icon" strokeWidth={1.8} />
-                  <input
-                    name="valorPago"
-                    type="number"
-                    min="0"
-                    step="0.01"
-                    value={form.valorPago}
-                    onChange={handle}
-                    className="form-input has-icon"
-                    placeholder={form.tipoPago === "mensual" ? t.clientesEjValorMensual : t.clientesEjValorTotal}
-                  />
-                </div>
-              </div>
-            )}
 
           </div>
 
@@ -380,11 +289,8 @@ export default function ClientesPage() {
                   className={`form-input has-icon has-icon-right${errors.password ? " form-input-error" : ""}`}
                   placeholder={t.clientesCrearPasswordPH}
                 />
-                <button type="button" className="form-toggle-pw"
-                  onClick={() => setShowPassword(!showPassword)}>
-                  {showPassword
-                    ? <EyeOff size={15} strokeWidth={1.8} />
-                    : <Eye    size={15} strokeWidth={1.8} />}
+                <button type="button" className="form-toggle-pw" onClick={() => setShowPassword(!showPassword)}>
+                  {showPassword ? <EyeOff size={15} strokeWidth={1.8} /> : <Eye size={15} strokeWidth={1.8} />}
                 </button>
               </div>
               <PasswordStrength password={form.password} />
@@ -403,11 +309,8 @@ export default function ClientesPage() {
                   className={`form-input has-icon has-icon-right${form.confirmar && form.confirmar !== form.password ? " form-input-error" : ""}`}
                   placeholder={t.clientesRepetirPasswordPH}
                 />
-                <button type="button" className="form-toggle-pw"
-                  onClick={() => setShowConfirm(!showConfirm)}>
-                  {showConfirm
-                    ? <EyeOff size={15} strokeWidth={1.8} />
-                    : <Eye    size={15} strokeWidth={1.8} />}
+                <button type="button" className="form-toggle-pw" onClick={() => setShowConfirm(!showConfirm)}>
+                  {showConfirm ? <EyeOff size={15} strokeWidth={1.8} /> : <Eye size={15} strokeWidth={1.8} />}
                 </button>
               </div>
               {form.confirmar && form.confirmar !== form.password && (
@@ -461,17 +364,14 @@ export default function ClientesPage() {
               <th>{t.clientesTelefono}</th>
               <th>{t.clientesPais}</th>
               <th>{t.dashProyecto}</th>
-              <th>{t.clientesContrato}</th>
-              <th>{t.clientesValor}</th>
-              <th>{t.clientesInicio}</th>
               <th></th>
             </tr>
           </thead>
           <tbody>
             {loadingData
-              ? <tr><td colSpan={8} style={{ textAlign:"center", color:"#9ca3af", padding:"1.5rem" }}>{t.clientesCargando}</td></tr>
+              ? <tr><td colSpan={6} style={{ textAlign:"center", color:"#9ca3af", padding:"1.5rem" }}>{t.clientesCargando}</td></tr>
               : paginated.length === 0
-              ? <tr><td colSpan={8} style={{ textAlign:"center", color:"#9ca3af", padding:"1.5rem" }}>{t.clientesSinResultados}</td></tr>
+              ? <tr><td colSpan={6} style={{ textAlign:"center", color:"#9ca3af", padding:"1.5rem" }}>{t.clientesSinResultados}</td></tr>
               : paginated.map((c: Record<string, unknown>) => (
               <tr key={String(c.id)}>
                 <td>
@@ -484,23 +384,12 @@ export default function ClientesPage() {
                 <td className="reporte-td-gray">{String(c.telefono ?? "")}</td>
                 <td>{String(c.pais ?? "")}</td>
                 <td>{String(c.proyecto ?? "")}</td>
-                <td className="reporte-td-gray">{String(c.contrato ?? "")} {parseInt(String(c.contrato)) !== 1 ? t.clientesMeses : t.clientesMes}</td>
-                <td className="reporte-td-bold" style={{ color:"#16a34a" }}>${String(c.valorPago ?? "")} {c.tipoPago === "mensual" ? t.clientesXMes : ""}</td>
-                <td className="reporte-td-gray">{c.fechaInicio ? formatFecha(String(c.fechaInicio), locale) : ""}</td>
                 <td>
                   <div style={{ display:"flex", gap:"0.4rem" }}>
-                    <button
-                      className="table-edit-btn"
-                      onClick={() => editarCliente(c)}
-                      title={t.pedidosSubtitleEditar}
-                    >
+                    <button className="table-edit-btn" onClick={() => editarCliente(c)} title={t.pedidosSubtitleEditar}>
                       <Pencil size={13} strokeWidth={2} />
                     </button>
-                    <button
-                      className="cv-delete-btn"
-                      onClick={() => { setDeletingId(String(c.id)); setConfirmDel(true); }}
-                      title="Eliminar cliente"
-                    >
+                    <button className="cv-delete-btn" onClick={() => { setDeletingId(String(c.id)); setConfirmDel(true); }} title="Eliminar cliente">
                       <Trash2 size={14} />
                     </button>
                   </div>
