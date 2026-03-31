@@ -546,22 +546,57 @@ export default function PedidosPage() {
             )}
 
 
-            <div className="form-field">
-              <label className="form-label">{t.pedidosMontoPagado}</label>
-              <div className="form-icon-wrap">
-                <DollarSign size={14} className="form-icon" strokeWidth={1.8} />
-                <input
-                  type="number"
-                  min="0"
-                  step="0.01"
-                  className="form-input has-icon"
-                  placeholder={t.pedidosMontoPagadoPH}
-                  value={form.montoPagado}
-                  onChange={e => setForm(f => ({ ...f, montoPagado: e.target.value }))}
-                />
+            {form.tipoPago && (
+              <div className="form-field">
+                <label className="form-label">{t.pedidosMontoTotal}</label>
+                <div className="form-icon-wrap">
+                  <DollarSign size={14} className="form-icon" strokeWidth={1.8} />
+                  <input
+                    type="number"
+                    min="0"
+                    step="0.01"
+                    className="form-input has-icon"
+                    placeholder={t.pedidosMontoTotalPH}
+                    value={form.montoTotal}
+                    onChange={e => setForm(f => ({ ...f, montoTotal: e.target.value }))}
+                  />
+                </div>
               </div>
-            </div>
+            )}
 
+            {form.montoTotal && (
+              <div className="form-field">
+                <label className="form-label">{t.pedidosMontoPagado}</label>
+                <div className="form-icon-wrap">
+                  <DollarSign size={14} className="form-icon" strokeWidth={1.8} />
+                  <input
+                    type="number"
+                    min="0"
+                    step="0.01"
+                    className="form-input has-icon"
+                    placeholder={t.pedidosMontoPagadoPH}
+                    value={form.montoPagado}
+                    onChange={e => setForm(f => ({ ...f, montoPagado: e.target.value }))}
+                  />
+                </div>
+              </div>
+            )}
+
+            {form.montoTotal && form.montoPagado && (parseFloat(form.montoTotal) - parseFloat(form.montoPagado)) > 0 && (
+              <div className="form-field">
+                <label className="form-label" style={{ color: "#dc2626" }}>{t.pedidosMontoPendiente}</label>
+                <div className="form-icon-wrap">
+                  <DollarSign size={14} className="form-icon" strokeWidth={1.8} style={{ color: "#dc2626" }} />
+                  <input
+                    type="text"
+                    readOnly
+                    className="form-input has-icon"
+                    style={{ background: "#fef2f2", color: "#dc2626", fontWeight: 600, cursor: "default" }}
+                    value={`$${(parseFloat(form.montoTotal) - parseFloat(form.montoPagado)).toFixed(2)}`}
+                  />
+                </div>
+              </div>
+            )}
 
           </div>
 
