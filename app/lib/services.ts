@@ -130,14 +130,15 @@ export async function deleteCV(nombre: string): Promise<void> {
 }
 
 // ─── COMPROBANTES DE PAGO (Cloudinary) ───────────────────────────────────────
+const CLOUDINARY_CLOUD_NAME    = "dj0ubeo4s";
+const CLOUDINARY_UPLOAD_PRESET = "openkode_comprobantes";
+
 export async function uploadComprobante(file: File): Promise<{ url: string; nombre: string }> {
-  const cloudName    = process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME;
-  const uploadPreset = process.env.NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET;
   const formData = new FormData();
   formData.append("file", file);
-  formData.append("upload_preset", uploadPreset!);
+  formData.append("upload_preset", CLOUDINARY_UPLOAD_PRESET);
   formData.append("folder", "comprobantes");
-  const res = await fetch(`https://api.cloudinary.com/v1_1/${cloudName}/auto/upload`, {
+  const res = await fetch(`https://api.cloudinary.com/v1_1/${CLOUDINARY_CLOUD_NAME}/auto/upload`, {
     method: "POST",
     body: formData,
   });
