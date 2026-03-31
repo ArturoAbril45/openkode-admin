@@ -545,21 +545,6 @@ export default function PedidosPage() {
               </div>
             )}
 
-            <div className="form-field">
-              <label className="form-label">{t.pedidosMontoTotal}</label>
-              <div className="form-icon-wrap">
-                <DollarSign size={14} className="form-icon" strokeWidth={1.8} />
-                <input
-                  type="number"
-                  min="0"
-                  step="0.01"
-                  className="form-input has-icon"
-                  placeholder={t.pedidosMontoTotalPH}
-                  value={form.montoTotal}
-                  onChange={e => setForm(f => ({ ...f, montoTotal: e.target.value }))}
-                />
-              </div>
-            </div>
 
             <div className="form-field">
               <label className="form-label">{t.pedidosMontoPagado}</label>
@@ -577,21 +562,6 @@ export default function PedidosPage() {
               </div>
             </div>
 
-            {(form.montoTotal || form.montoPagado) && (
-              <div className="form-field">
-                <label className="form-label">{t.pedidosMontoPendiente}</label>
-                <div className="form-icon-wrap">
-                  <DollarSign size={14} className="form-icon" strokeWidth={1.8} />
-                  <input
-                    type="text"
-                    readOnly
-                    className="form-input has-icon"
-                    style={{ background: "var(--bg-secondary, #f9fafb)", cursor: "default" }}
-                    value={`$${Math.max(0, (parseFloat(form.montoTotal) || 0) - (parseFloat(form.montoPagado) || 0)).toFixed(2)}`}
-                  />
-                </div>
-              </div>
-            )}
 
           </div>
 
