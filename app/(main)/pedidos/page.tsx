@@ -720,7 +720,14 @@ export default function PedidosPage() {
               <tr><td colSpan={8} style={{ textAlign: "center", color: "#9ca3af", padding: "1.5rem" }}>{t.pedidosSinResultados}</td></tr>
             ) : paginated.map(p => (
               <tr key={String(p.id)} className={editId === String(p.id) ? "tr-editing" : ""}>
-                <td className="reporte-td-bold">{String(p.proyecto ?? "—")}</td>
+                <td style={{ overflow: "hidden", maxWidth: 0 }}>
+                  <p style={{ margin: 0, fontWeight: 700, color: "#0f0f1a", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{String(p.proyecto ?? "—")}</p>
+                  {p.mensaje ? (
+                    <p style={{ margin: 0, fontSize: "0.72rem", color: "#9ca3af", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", marginTop: "0.15rem" }}>
+                      {String(p.mensaje)}
+                    </p>
+                  ) : null}
+                </td>
                 <td>{String(p.cliente ?? "—")}</td>
                 <td className="reporte-td-gray">{SERVICIOS_LABEL[String(p.servicio ?? "")] ?? String(p.servicio ?? "—")}</td>
                 <td style={{ overflow: "visible", whiteSpace: "normal" }}>
