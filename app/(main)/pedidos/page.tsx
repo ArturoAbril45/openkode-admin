@@ -56,13 +56,11 @@ const EMPTY_FORM = {
   fecha:             "",
   fechaEntrega:      "",
   mensaje:           "",
-  contrato:          "",
-  tipoPago:          "",
-  valorPago:         "",
-  montoTotal:        "",
-  montoPagado:       "",
-  comprobante:       "",
-  comprobanteNombre: "",
+  contrato:   "",
+  tipoPago:   "",
+  valorPago:  "",
+  montoTotal: "",
+  montoPagado:"",
 };
 
 export default function PedidosPage() {
@@ -133,8 +131,10 @@ export default function PedidosPage() {
   const [confirmDel,  setConfirmDel]  = useState(false);
   const formRef             = useRef<HTMLDivElement>(null);
   const comprobanteInputRef = useRef<HTMLInputElement>(null);
-  const [comprobanteFile,   setComprobanteFile]   = useState<File | null>(null);
-  const [uploadingComp,     setUploadingComp]     = useState(false);
+  const [comprobantes,        setComprobantes]        = useState<string[]>([]);
+  const [comprobantesNombres, setComprobantesNombres] = useState<string[]>([]);
+  const [comprobanteFiles,    setComprobanteFiles]    = useState<File[]>([]);
+  const [uploadingComp,       setUploadingComp]       = useState(false);
 
   useEffect(() => {
     Promise.all([getPedidos(), getClientes()]).then(([peds, clts]) => {
@@ -186,14 +186,16 @@ export default function PedidosPage() {
       const hoy = new Date().toISOString().split("T")[0];
       let pedidoId = editId;
 
-      let comprobanteUrl    = form.comprobante;
-      let comprobanteNombre = form.comprobanteNombre;
-      if (comprobanteFile) {
+      let updatedComprobantes = [...comprobantes];
+      let updatedNombres      = [...comprobantesNombres];
+      if (comprobanteFiles.length > 0) {
         setUploadingComp(true);
         try {
-          const result = await uploadComprobante(comprobanteFile);
-          comprobanteUrl    = result.url;
-          comprobanteNombre = result.nombre;
+          for (const file of comprobanteFiles) {
+            const result = await uploadComprobante(file);
+            updatedComprobantes.push(result.url);
+            updatedNombres.push(result.nombre);
+          }
           showToast(t.pedidosComprobanteOk, "success");
         } catch {
           showToast(t.pedidosComprobanteError, "error");
@@ -201,9 +203,9 @@ export default function PedidosPage() {
           return;
         }
         setUploadingComp(false);
-        setComprobanteFile(null);
+        setComprobanteFiles([]);
       }
-      const saveData = { ...form, tecnologias, comprobante: comprobanteUrl, comprobanteNombre };
+      const saveData = { ...form, tecnologias, comprobantes: updatedComprobantes, comprobantesNombres: updatedNombres };
 
       if (editId) {
         await updatePedido(editId, saveData);
@@ -237,6 +239,8 @@ export default function PedidosPage() {
 
       setForm(EMPTY_FORM);
       setTecnologias([]);
+      setComprobantes([]);
+      setComprobantesNombres([]);
       setErrors({});
       const data = await getPedidos();
       setPedidos(data);
@@ -263,12 +267,19 @@ export default function PedidosPage() {
       tipoPago:          String(p.tipoPago           ?? ""),
       valorPago:         String(p.valorPago          ?? ""),
       montoTotal:        String(p.montoTotal         ?? ""),
-      montoPagado:       String(p.montoPagado        ?? ""),
-      comprobante:       String(p.comprobante        ?? ""),
-      comprobanteNombre: String(p.comprobanteNombre  ?? ""),
+      montoPagado:  String(p.montoPagado ?? ""),
     });
     setTecnologias((p.tecnologias as string[]) ?? []);
-    setComprobanteFile(null);
+    // backward compat: old records store single comprobante as string
+    const existingComps = Array.isArray(p.comprobantes)
+      ? (p.comprobantes as string[])
+      : (p.comprobante ? [String(p.comprobante)] : []);
+    const existingNombres = Array.isArray(p.comprobantesNombres)
+      ? (p.comprobantesNombres as string[])
+      : (p.comprobanteNombre ? [String(p.comprobanteNombre)] : []);
+    setComprobantes(existingComps);
+    setComprobantesNombres(existingNombres);
+    setComprobanteFiles([]);
     setErrors({});
     setTimeout(() => formRef.current?.scrollIntoView({ behavior: "smooth", block: "start" }), 50);
   }
@@ -291,6 +302,9 @@ export default function PedidosPage() {
     setEditId(null);
     setForm(EMPTY_FORM);
     setTecnologias([]);
+    setComprobantes([]);
+    setComprobantesNombres([]);
+    setComprobanteFiles([]);
     setErrors({});
   }
 
@@ -591,30 +605,35 @@ export default function PedidosPage() {
           <div className="form-field" style={{ marginTop: "1rem" }}>
             <label className="form-label">{t.pedidosSubirComprobante}</label>
             <div style={{ display: "flex", flexDirection: "column", gap: "0.5rem" }}>
-              {form.comprobante && !comprobanteFile && (
-                <div style={{ display: "flex", alignItems: "center", gap: "0.5rem", fontSize: "0.82rem", color: "#6c63ff" }}>
+              {comprobantes.map((url, i) => (
+                <div key={i} style={{ display: "flex", alignItems: "center", gap: "0.5rem", fontSize: "0.82rem", color: "#6c63ff" }}>
                   <FileCheck size={14} strokeWidth={2} />
-                  <span>{t.pedidosComprobanteActual}:</span>
-                  <a href={form.comprobante} target="_blank" rel="noreferrer" style={{ display: "inline-flex", alignItems: "center", gap: "0.25rem", color: "#6c63ff", textDecoration: "underline" }}>
-                    {t.pedidosVerComprobante} <ExternalLink size={12} />
+                  <a href={url} target="_blank" rel="noreferrer" style={{ display: "inline-flex", alignItems: "center", gap: "0.25rem", color: "#6c63ff", textDecoration: "underline" }}>
+                    {t.pedidosVerComprobante}{comprobantes.length > 1 ? ` (${i + 1})` : ""} <ExternalLink size={12} />
                   </a>
-                </div>
-              )}
-              {comprobanteFile && (
-                <div style={{ display: "flex", alignItems: "center", gap: "0.5rem", fontSize: "0.82rem", color: "#059669" }}>
-                  <FileCheck size={14} strokeWidth={2} />
-                  <span>{comprobanteFile.name}</span>
-                  <button type="button" onClick={() => setComprobanteFile(null)} style={{ background: "none", border: "none", cursor: "pointer", color: "#9ca3af", padding: 0 }}>
+                  <button type="button" onClick={() => {
+                    setComprobantes(c => c.filter((_, j) => j !== i));
+                    setComprobantesNombres(c => c.filter((_, j) => j !== i));
+                  }} style={{ background: "none", border: "none", cursor: "pointer", color: "#9ca3af", padding: 0 }}>
                     <X size={13} />
                   </button>
                 </div>
-              )}
+              ))}
+              {comprobanteFiles.map((f, i) => (
+                <div key={`pending-${i}`} style={{ display: "flex", alignItems: "center", gap: "0.5rem", fontSize: "0.82rem", color: "#059669" }}>
+                  <FileCheck size={14} strokeWidth={2} />
+                  <span>{f.name}</span>
+                  <button type="button" onClick={() => setComprobanteFiles(files => files.filter((_, j) => j !== i))} style={{ background: "none", border: "none", cursor: "pointer", color: "#9ca3af", padding: 0 }}>
+                    <X size={13} />
+                  </button>
+                </div>
+              ))}
               <input
                 ref={comprobanteInputRef}
                 type="file"
                 accept="image/*,.pdf"
                 style={{ display: "none" }}
-                onChange={e => { const f = e.target.files?.[0]; if (f) setComprobanteFile(f); e.target.value = ""; }}
+                onChange={e => { const f = e.target.files?.[0]; if (f) setComprobanteFiles(files => [...files, f]); e.target.value = ""; }}
               />
               <button
                 type="button"

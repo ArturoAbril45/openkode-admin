@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import {
   DollarSign, Search, Loader2,
   CheckCircle2, AlertCircle, MinusCircle, CreditCard, Eye, X,
+  ChevronLeft, ChevronRight,
 } from "lucide-react";
 import Pagination  from "../../components/Pagination";
 import { getPedidos } from "../../lib/services";
@@ -28,7 +29,8 @@ export default function PagosPage() {
   const [loadingData,  setLoadingData]  = useState(true);
   const [search,       setSearch]       = useState("");
   const [page,         setPage]         = useState(1);
-  const [modalUrl,     setModalUrl]     = useState<string | null>(null);
+  const [modalList,    setModalList]    = useState<string[]>([]);
+  const [modalIdx,     setModalIdx]     = useState(0);
   const [modalProyecto, setModalProyecto] = useState("");
 
   useEffect(() => {
@@ -67,39 +69,60 @@ export default function PagosPage() {
   return (
     <>
       {/* ── Modal comprobante ── */}
-      {modalUrl && (
+      {modalList.length > 0 && (
         <div
           style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.7)", zIndex: 9999, display: "flex", alignItems: "center", justifyContent: "center", padding: "1rem" }}
-          onClick={() => setModalUrl(null)}
+          onClick={() => setModalList([])}
         >
           <div
-            style={{ background: "#fff", borderRadius: "14px", overflow: "hidden", maxWidth: "90vw", maxHeight: "90vh", display: "flex", flexDirection: "column", boxShadow: "0 20px 60px rgba(0,0,0,0.4)" }}
+            style={{ background: "#fff", borderRadius: "14px", overflow: "hidden", maxWidth: "90vw", maxHeight: "90vh", display: "flex", flexDirection: "column", boxShadow: "0 20px 60px rgba(0,0,0,0.4)", position: "relative" }}
             onClick={e => e.stopPropagation()}
           >
-            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "0.75rem 1rem", borderBottom: "1px solid #f0f0f0" }}>
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "0.75rem 1rem", borderBottom: "1px solid #f0f0f0", gap: "1rem" }}>
               <p style={{ margin: 0, fontWeight: 600, fontSize: "0.9rem", color: "#1f2937" }}>{modalProyecto}</p>
+              {modalList.length > 1 && (
+                <span style={{ fontSize: "0.78rem", color: "#6b7280", whiteSpace: "nowrap" }}>{modalIdx + 1} / {modalList.length}</span>
+              )}
               <button
-                onClick={() => setModalUrl(null)}
-                style={{ background: "#f3f4f6", border: "none", borderRadius: "6px", padding: "0.3rem 0.5rem", cursor: "pointer", display: "flex", alignItems: "center", color: "#6b7280" }}
+                onClick={() => setModalList([])}
+                style={{ background: "#f3f4f6", border: "none", borderRadius: "6px", padding: "0.3rem 0.5rem", cursor: "pointer", display: "flex", alignItems: "center", color: "#6b7280", marginLeft: "auto" }}
               >
                 <X size={16} />
               </button>
             </div>
             <div style={{ overflow: "auto", maxHeight: "80vh", display: "flex", alignItems: "center", justifyContent: "center", background: "#f9fafb" }}>
-              {isImage(modalUrl) ? (
+              {isImage(modalList[modalIdx]) ? (
                 <img
-                  src={modalUrl}
+                  src={modalList[modalIdx]}
                   alt="Comprobante"
                   style={{ maxWidth: "80vw", maxHeight: "75vh", objectFit: "contain", display: "block" }}
                 />
               ) : (
                 <iframe
-                  src={modalUrl}
+                  src={modalList[modalIdx]}
                   style={{ width: "80vw", height: "75vh", border: "none" }}
                   title="Comprobante PDF"
                 />
               )}
             </div>
+            {modalList.length > 1 && (
+              <>
+                <button
+                  onClick={e => { e.stopPropagation(); setModalIdx(i => Math.max(0, i - 1)); }}
+                  disabled={modalIdx === 0}
+                  style={{ position: "absolute", left: "0.5rem", top: "50%", transform: "translateY(-50%)", background: "rgba(0,0,0,0.45)", border: "none", borderRadius: "50%", width: "36px", height: "36px", display: "flex", alignItems: "center", justifyContent: "center", cursor: modalIdx === 0 ? "default" : "pointer", opacity: modalIdx === 0 ? 0.3 : 1, color: "#fff" }}
+                >
+                  <ChevronLeft size={20} />
+                </button>
+                <button
+                  onClick={e => { e.stopPropagation(); setModalIdx(i => Math.min(modalList.length - 1, i + 1)); }}
+                  disabled={modalIdx === modalList.length - 1}
+                  style={{ position: "absolute", right: "0.5rem", top: "50%", transform: "translateY(-50%)", background: "rgba(0,0,0,0.45)", border: "none", borderRadius: "50%", width: "36px", height: "36px", display: "flex", alignItems: "center", justifyContent: "center", cursor: modalIdx === modalList.length - 1 ? "default" : "pointer", opacity: modalIdx === modalList.length - 1 ? 0.3 : 1, color: "#fff" }}
+                >
+                  <ChevronRight size={20} />
+                </button>
+              </>
+            )}
           </div>
         </div>
       )}
@@ -209,16 +232,21 @@ export default function PagosPage() {
                     )}
                   </td>
                   <td>
-                    {p.comprobante ? (
-                      <button
-                        onClick={() => { setModalUrl(String(p.comprobante)); setModalProyecto(String(p.proyecto ?? "")); }}
-                        style={{ display: "inline-flex", alignItems: "center", gap: "0.3rem", fontSize: "0.78rem", color: "#6c63ff", background: "#ede9fe", padding: "0.2rem 0.6rem", borderRadius: "6px", fontWeight: 500, border: "none", cursor: "pointer" }}
-                      >
-                        <Eye size={12} strokeWidth={2} /> {t.pagosVerComprobante}
-                      </button>
-                    ) : (
-                      <span style={{ color: "#9ca3af", fontSize: "0.82rem" }}>—</span>
-                    )}
+                    {(() => {
+                      const comps = Array.isArray(p.comprobantes)
+                        ? (p.comprobantes as string[]).filter(Boolean)
+                        : p.comprobante ? [String(p.comprobante)] : [];
+                      return comps.length > 0 ? (
+                        <button
+                          onClick={() => { setModalList(comps); setModalIdx(0); setModalProyecto(String(p.proyecto ?? "")); }}
+                          style={{ display: "inline-flex", alignItems: "center", gap: "0.3rem", fontSize: "0.78rem", color: "#6c63ff", background: "#ede9fe", padding: "0.2rem 0.6rem", borderRadius: "6px", fontWeight: 500, border: "none", cursor: "pointer" }}
+                        >
+                          <Eye size={12} strokeWidth={2} /> {t.pagosVerComprobante}{comps.length > 1 ? ` (${comps.length})` : ""}
+                        </button>
+                      ) : (
+                        <span style={{ color: "#9ca3af", fontSize: "0.82rem" }}>—</span>
+                      );
+                    })()}
                   </td>
                 </tr>
               );
