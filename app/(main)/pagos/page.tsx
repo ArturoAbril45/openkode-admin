@@ -2,8 +2,8 @@
 
 import { useState, useEffect } from "react";
 import {
-  DollarSign, Search, Loader2, ExternalLink,
-  CheckCircle2, AlertCircle, MinusCircle, CreditCard,
+  DollarSign, Search, Loader2,
+  CheckCircle2, AlertCircle, MinusCircle, CreditCard, Eye, X, Download,
 } from "lucide-react";
 import Pagination  from "../../components/Pagination";
 import { getPedidos } from "../../lib/services";
@@ -17,13 +17,19 @@ function fmt(v: string | number): string {
   return `$${n.toLocaleString("es", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 }
 
+function isImage(url: string) {
+  return /\.(jpg|jpeg|png|gif|webp|svg)(\?|$)/i.test(url) || url.includes("cloudinary.com");
+}
+
 export default function PagosPage() {
   const { t } = useLang();
 
-  const [pedidos,     setPedidos]     = useState<Record<string, unknown>[]>([]);
-  const [loadingData, setLoadingData] = useState(true);
-  const [search,      setSearch]      = useState("");
-  const [page,        setPage]        = useState(1);
+  const [pedidos,      setPedidos]      = useState<Record<string, unknown>[]>([]);
+  const [loadingData,  setLoadingData]  = useState(true);
+  const [search,       setSearch]       = useState("");
+  const [page,         setPage]         = useState(1);
+  const [modalUrl,     setModalUrl]     = useState<string | null>(null);
+  const [modalProyecto, setModalProyecto] = useState("");
 
   useEffect(() => {
     getPedidos().then(data => {
@@ -38,8 +44,7 @@ export default function PagosPage() {
   );
   const paginated = filtered.slice((page - 1) * PER_PAGE, page * PER_PAGE);
 
-  // Summary totals (only pedidos that have montoTotal set)
-  const conPago = pedidos.filter(p => p.montoTotal && String(p.montoTotal) !== "");
+  const conPago        = pedidos.filter(p => p.montoTotal && String(p.montoTotal) !== "");
   const totalFacturado = conPago.reduce((s, p) => s + (parseFloat(String(p.montoTotal  ?? 0)) || 0), 0);
   const totalPagado    = conPago.reduce((s, p) => s + (parseFloat(String(p.montoPagado ?? 0)) || 0), 0);
   const totalPendiente = Math.max(0, totalFacturado - totalPagado);
@@ -61,6 +66,54 @@ export default function PagosPage() {
 
   return (
     <>
+      {/* ── Modal comprobante ── */}
+      {modalUrl && (
+        <div
+          style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.7)", zIndex: 9999, display: "flex", alignItems: "center", justifyContent: "center", padding: "1rem" }}
+          onClick={() => setModalUrl(null)}
+        >
+          <div
+            style={{ background: "#fff", borderRadius: "14px", overflow: "hidden", maxWidth: "90vw", maxHeight: "90vh", display: "flex", flexDirection: "column", boxShadow: "0 20px 60px rgba(0,0,0,0.4)" }}
+            onClick={e => e.stopPropagation()}
+          >
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "0.75rem 1rem", borderBottom: "1px solid #f0f0f0" }}>
+              <p style={{ margin: 0, fontWeight: 600, fontSize: "0.9rem", color: "#1f2937" }}>{modalProyecto}</p>
+              <div style={{ display: "flex", gap: "0.5rem" }}>
+                <a
+                  href={modalUrl}
+                  target="_blank"
+                  rel="noreferrer"
+                  style={{ display: "inline-flex", alignItems: "center", gap: "0.3rem", fontSize: "0.78rem", color: "#6c63ff", background: "#ede9fe", padding: "0.3rem 0.7rem", borderRadius: "6px", textDecoration: "none", fontWeight: 500 }}
+                >
+                  <Download size={13} /> Abrir original
+                </a>
+                <button
+                  onClick={() => setModalUrl(null)}
+                  style={{ background: "#f3f4f6", border: "none", borderRadius: "6px", padding: "0.3rem 0.5rem", cursor: "pointer", display: "flex", alignItems: "center", color: "#6b7280" }}
+                >
+                  <X size={16} />
+                </button>
+              </div>
+            </div>
+            <div style={{ overflow: "auto", maxHeight: "80vh", display: "flex", alignItems: "center", justifyContent: "center", background: "#f9fafb" }}>
+              {isImage(modalUrl) ? (
+                <img
+                  src={modalUrl}
+                  alt="Comprobante"
+                  style={{ maxWidth: "80vw", maxHeight: "75vh", objectFit: "contain", display: "block" }}
+                />
+              ) : (
+                <iframe
+                  src={modalUrl}
+                  style={{ width: "80vw", height: "75vh", border: "none" }}
+                  title="Comprobante PDF"
+                />
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
       <div className="panel-header">
         <div>
           <h2 className="panel-title">{t.pagosTitle}</h2>
@@ -130,10 +183,10 @@ export default function PagosPage() {
                 </td>
               </tr>
             ) : paginated.map(p => {
-              const total    = parseFloat(String(p.montoTotal  ?? "")) || 0;
-              const pagado   = parseFloat(String(p.montoPagado ?? "")) || 0;
+              const total     = parseFloat(String(p.montoTotal  ?? "")) || 0;
+              const pagado    = parseFloat(String(p.montoPagado ?? "")) || 0;
               const pendiente = Math.max(0, total - pagado);
-              const estado = estadoPago(p);
+              const estado    = estadoPago(p);
 
               return (
                 <tr key={String(p.id)}>
@@ -167,15 +220,12 @@ export default function PagosPage() {
                   </td>
                   <td>
                     {p.comprobante ? (
-                      <a
-                        href={String(p.comprobante)}
-                        target="_blank"
-                        rel="noreferrer"
-                        title={t.pagosVerComprobante}
-                        style={{ display: "inline-flex", alignItems: "center", gap: "0.3rem", textDecoration: "none", fontSize: "0.78rem", color: "#6c63ff", background: "#ede9fe", padding: "0.2rem 0.6rem", borderRadius: "6px", fontWeight: 500 }}
+                      <button
+                        onClick={() => { setModalUrl(String(p.comprobante)); setModalProyecto(String(p.proyecto ?? "")); }}
+                        style={{ display: "inline-flex", alignItems: "center", gap: "0.3rem", fontSize: "0.78rem", color: "#6c63ff", background: "#ede9fe", padding: "0.2rem 0.6rem", borderRadius: "6px", fontWeight: 500, border: "none", cursor: "pointer" }}
                       >
-                        <ExternalLink size={12} strokeWidth={2} /> {t.pagosVerComprobante}
-                      </a>
+                        <Eye size={12} strokeWidth={2} /> {t.pagosVerComprobante}
+                      </button>
                     ) : (
                       <span style={{ color: "#9ca3af", fontSize: "0.82rem" }}>—</span>
                     )}
