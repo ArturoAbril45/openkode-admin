@@ -955,8 +955,12 @@ body {
 }
 
 .bell-menu {
-  min-width: 280px;
-  max-width: 320px;
+  min-width: 300px;
+  max-width: 340px;
+  position: fixed !important;
+  top: 56px !important;
+  right: 1rem !important;
+  z-index: 99 !important;
 }
 
 .bell-menu-header {
@@ -993,8 +997,7 @@ body {
 }
 
 .bell-notif-list {
-  max-height: 320px;
-  overflow-y: auto;
+  /* Sin scroll — se limita la cantidad en JSX */
 }
 
 .bell-notif-item {

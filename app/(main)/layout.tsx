@@ -347,7 +347,7 @@ function LayoutContent({ children }: { children: React.ReactNode }) {
                       <p className="bell-menu-empty">{t.noNotifications}</p>
                     ) : (
                       <div className="bell-notif-list">
-                        {notifs.map(n => (
+                        {notifs.slice(0, 6).map(n => (
                           <div key={n.id} className={`bell-notif-item${n.leida ? "" : " bell-notif-unread"}`}>
                             <div className="bell-notif-dot" />
                             <div className="bell-notif-body">
