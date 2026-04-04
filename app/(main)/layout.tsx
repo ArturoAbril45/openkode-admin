@@ -8,7 +8,7 @@ import {
   MessageSquare, Bell, Settings, FileBarChart2,
   LogOut, ChevronRight, PanelLeftClose, PanelLeftOpen, Search, Globe,
   KeyRound, FolderCheck, FolderX, CalendarClock, CalendarCheck,
-  Trash2, CreditCard,
+  Trash2, CreditCard, Activity,
 } from "lucide-react";
 import PageLoader           from "../components/PageLoader";
 import ToastContainer       from "../components/Toast";
@@ -36,6 +36,7 @@ const SECTION_LABELS: Record<string, string> = {
   "/pagos":                "Pagos",
   "/configuracion":        "Configuración",
   "/reporte-tecnico":      "Reporte Técnico",
+  "/seguimiento":          "Seguimiento",
 };
 
 type Notif = { id: string; mensaje: string; leida: boolean; creadoEn?: unknown };
@@ -168,6 +169,7 @@ function LayoutContent({ children }: { children: React.ReactNode }) {
     { href: "/proyectos",             icon: FolderCheck,     label: t.navProyectos    },
     { href: "/proyectos-cancelados",  icon: FolderX,         label: t.navCancelados   },
     { href: "/fecha-entrega",         icon: CalendarClock,   label: t.navFechaEntrega },
+    { href: "/seguimiento",           icon: Activity,        label: t.navSeguimiento  },
   ];
 
   const NAV_SYSTEM = [

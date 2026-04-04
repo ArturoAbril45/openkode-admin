@@ -24,6 +24,7 @@ export default function Breadcrumb() {
     pagos:                 t.navPagos,
     configuracion:         t.navConfiguracion,
     "reporte-tecnico":     t.navReporte,
+    seguimiento:           t.navSeguimiento,
   };
 
   return (

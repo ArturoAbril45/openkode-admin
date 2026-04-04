@@ -154,6 +154,23 @@ export async function uploadComprobante(file: File): Promise<{ url: string; nomb
   return { url: data.secure_url, nombre: data.public_id };
 }
 
+// ─── SEGUIMIENTO DE PROYECTOS ─────────────────────────────────────────────────
+export async function getSeguimiento(pedidoId: string) {
+  const snap = await getDoc(doc(db, "seguimiento", pedidoId));
+  return snap.exists() ? { id: snap.id, ...snap.data() } : null;
+}
+
+export async function saveSeguimiento(pedidoId: string, data: Record<string, unknown>) {
+  return setDoc(doc(db, "seguimiento", pedidoId), {
+    ...data, pedidoId, actualizadoEn: serverTimestamp(),
+  });
+}
+
+export async function getAllSeguimientos() {
+  const snap = await getDocs(collection(db, "seguimiento"));
+  return snap.docs.map(d => ({ id: d.id, ...d.data() }));
+}
+
 // ─── NOTIFICACIONES ───────────────────────────────────────────────────────────
 export async function getNotificaciones() {
   const snap = await getDocs(
