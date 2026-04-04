@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 import { Send, PanelLeftClose, PanelLeftOpen, Search, Loader2 } from "lucide-react";
 import { getClientes, getMensajes, addMensaje } from "../../lib/services";
@@ -15,6 +15,14 @@ function horaActual() {
 }
 
 export default function MensajesPage() {
+  return (
+    <Suspense>
+      <MensajesContent />
+    </Suspense>
+  );
+}
+
+function MensajesContent() {
   const { t } = useLang();
   const searchParams = useSearchParams();
   const clienteIdParam = searchParams.get("clienteId");
