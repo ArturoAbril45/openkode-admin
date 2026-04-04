@@ -61,14 +61,14 @@ export default function VerProyectoPage() {
   }
 
   if (loading) return (
-    <div style={{ height:"100vh", display:"flex", alignItems:"center", justifyContent:"center", background:"#f3f4f8", overflow:"hidden" }}>
+    <div style={{ position:"fixed", inset:0, display:"flex", alignItems:"center", justifyContent:"center", background:"#f3f4f8" }}>
       <Loader2 size={30} style={{ color:"#6c63ff", animation:"spin 1s linear infinite" }} />
-      <style>{`@keyframes spin{to{transform:rotate(360deg)}}`}</style>
+      <style>{`@keyframes spin{to{transform:rotate(360deg)}} body{overflow:hidden!important}`}</style>
     </div>
   );
 
   if (notFound || !data) return (
-    <div style={{ height:"100vh", display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center", background:"#f3f4f8", gap:"0.75rem", overflow:"hidden" }}>
+    <div style={{ position:"fixed", inset:0, display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center", background:"#f3f4f8", gap:"0.75rem" }}>
       <div style={{ fontSize:"2.5rem" }}>🔍</div>
       <p style={{ fontWeight:700, fontSize:"1rem", color:"#374151", margin:0 }}>Proyecto no encontrado</p>
       <p style={{ color:"#9ca3af", fontSize:"0.82rem", margin:0 }}>Verifica el enlace que te compartieron.</p>
